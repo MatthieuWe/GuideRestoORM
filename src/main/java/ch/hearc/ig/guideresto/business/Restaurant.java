@@ -23,7 +23,7 @@ public class Restaurant implements IBusinessObject {
     private String name;
     private String description;
     private String website;
-    @Transient
+    @OneToMany(mappedBy = "restaurant")
     private Set<Evaluation> evaluations;
     @Embedded
     private Localisation address;

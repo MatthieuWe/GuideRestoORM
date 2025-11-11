@@ -20,7 +20,8 @@ public abstract class Evaluation implements IBusinessObject {
     private Integer id;
     @Column(name="date_eval", nullable = false)
     private Date visitDate;
-    @Transient
+    @ManyToOne
+    @JoinColumn(name = "fk_rest", nullable = false)
     private Restaurant restaurant;
 
     public Evaluation() {
