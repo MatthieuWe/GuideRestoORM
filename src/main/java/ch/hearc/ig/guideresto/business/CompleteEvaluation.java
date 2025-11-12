@@ -1,6 +1,6 @@
 package ch.hearc.ig.guideresto.business;
 
-/**
+/*
  * @author cedric.baudet
  */
 
