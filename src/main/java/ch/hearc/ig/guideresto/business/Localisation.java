@@ -11,7 +11,7 @@ import jakarta.persistence.ManyToOne;
 @Embeddable
 public class Localisation {
 
-    @Column(name = "rue")
+    @Column(name = "adresse", length = 100)
     private String street;
     @ManyToOne
     @JoinColumn(name = "fk_vill", nullable = false)

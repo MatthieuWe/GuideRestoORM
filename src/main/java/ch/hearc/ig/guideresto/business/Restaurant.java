@@ -10,24 +10,33 @@ import java.util.Set;
  * @author cedric.baudet
  */
 @Entity
-@Table(name = "restaurants")
+@Table(name="RESTAURANTS")
 public class Restaurant implements IBusinessObject {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE,
-            generator = "seq_restaurants")
-    @SequenceGenerator(name="seq_restaurants", sequenceName = "seq_restaurants",
-            initialValue = 1, allocationSize = 1)
+    @GeneratedValue(strategy= GenerationType.SEQUENCE,
+        generator="SEQ_RESTAURANTS")
+    @SequenceGenerator(name="SEQ_RESTAURANTS", sequenceName="SEQ_RESTAURANTS",
+        initialValue=1, allocationSize=1)
     @Column(name="numero", length=10)
     private Integer id;
+    @Column(name="nom", length=100)
     private String name;
+
+    @Lob
+    @Column(name="description", length=500)
     private String description;
+    @Column(name="site_web", length=100)
     private String website;
-    @OneToMany(mappedBy = "restaurant")
+
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
+
     @Embedded
     private Localisation address;
-    @Transient
+
+    @ManyToOne
+    @JoinColumn(name = "fk_type")
     private RestaurantType type;
 
     public Restaurant() {
