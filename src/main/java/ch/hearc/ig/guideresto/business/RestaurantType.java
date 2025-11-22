@@ -1,16 +1,33 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
+
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name="TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+        generator = "SEQ_TYPES_GASTRONOMIQUES")
+    @SequenceGenerator(name="SEQ_TYPES_GASTRONOMIQUES", sequenceName = "SEQ_TYPES_GASTRONOMIQUES",
+        initialValue = 1, allocationSize = 1)
+    @Column(name="numero", length = 10)
     private Integer id;
+
+    @Column(name="libelle", nullable = false, length = 100)
     private String label;
+
+    @Lob //a nouveau je crois que ça marche mais j'ai pas vraiment de réseau pour tester et en soit je m'en fiche ???
+    @Column(name="description")
     private String description;
+
+    @OneToMany(mappedBy = "type") //t'avais raison matthieu j'ai compris mon erreur 🙂‍↕️🙂‍↕️
     private Set<Restaurant> restaurants;
 
     public RestaurantType() {

@@ -1,8 +1,11 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.Embeddable;
+
 /**
  * @author cedric.baudet
  */
+@Embeddable
 public class Localisation {
 
     private String street;

@@ -4,6 +4,7 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.FakeItems;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,6 +22,17 @@ public class Application {
     private static final Logger logger = LogManager.getLogger(Application.class);
 
     public static void main(String[] args) {
+        // start test
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+        City city1 = em.find(City.class, 1);
+        System.out.println(city1.getCityName());
+        Evaluation be = em.find(BasicEvaluation.class, 7);
+        System.out.println(((BasicEvaluation)be).getIpAddress() + " - " + be.getVisitDate());
+        em.close();
+
+        // end test
+
         scanner = new Scanner(System.in);
        
        EntityManager entityManager =JpaUtils.getEntityManager();
