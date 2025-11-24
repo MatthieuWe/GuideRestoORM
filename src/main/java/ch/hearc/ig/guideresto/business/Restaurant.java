@@ -23,7 +23,7 @@ public class Restaurant implements IBusinessObject {
     @Column(name="nom", length=100)
     private String name;
 
-    @Lob //je crois que c'est ça pour Lob, en ttout cas c'est ce que me dit stackoverflow
+    @Lob
     @Column(name="description", length=500)
     private String description;
     @Column(name="site_web", length=100)
@@ -31,7 +31,6 @@ public class Restaurant implements IBusinessObject {
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
-
 
     @Embedded
     private Localisation address;
@@ -44,6 +43,15 @@ public class Restaurant implements IBusinessObject {
         this(null, null, null, null, null, null);
     }
 
+    public Restaurant(Integer id, String name, String description, String website, String street, City city, RestaurantType type) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.website = website;
+        this.evaluations = new HashSet();
+        this.address = new Localisation(street, city);
+        this.type = type;
+    }
 
     public Restaurant(Integer id, String name, String description, String website, Localisation address, RestaurantType type) {
         this.id = id;

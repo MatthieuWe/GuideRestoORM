@@ -9,6 +9,18 @@ import java.util.Date;
  */
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+/*
+NOTES sur l'héritage dans ce projet:
+Nous avons choisi TABLE_PER_CLASS == Concrete Table Inheritance, soit une table par classe concrète
+et pas de table pour les classes abstraites, car c'est exactement ce qui correspond au modèle de données.
+
+-> il n'existe pas de table qui représente "Evaluation", donc on n'est pas en mode "Class Table Inheritance"
+-> les tables correspondantes aux classes concrètes "likes" et "commentaires" existent et contiennent chacune
+    les attributs partagés, définis ci-dessous (date_eval, fk_rest)
+    -> attributs communs à double dans la DB
+    -> C'est bien la définition de "Concrete Table Inheritance"
+-> ce sont deux tables distinctes, donc on n'est heureusement pas non plus en "Single Table Inheritance"
+ */
 public abstract class Evaluation implements IBusinessObject {
 
     @Id
@@ -20,7 +32,8 @@ public abstract class Evaluation implements IBusinessObject {
     private Integer id;
     @Column(name="date_eval", nullable = false)
     private Date visitDate;
-    @Transient
+    @ManyToOne
+    @JoinColumn(name = "fk_rest", nullable = false)
     private Restaurant restaurant;
 
     public Evaluation() {
