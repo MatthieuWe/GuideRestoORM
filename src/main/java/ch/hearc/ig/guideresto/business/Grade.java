@@ -17,12 +17,16 @@ public class Grade implements IBusinessObject {
     
     @Column(name="NOTE", nullable=false)
     private Integer grade;
-    
-    @Transient
-    private CompleteEvaluation evaluation;
-   
-   @Transient
-    private EvaluationCriteria criteria;
+
+    @ManyToOne
+    @JoinColumn(name="FK_COMM", nullable=false)
+   // @Transient
+    private CompleteEvaluation evaluation; //TABLE COMMENTAIRES FK_COMM POINTE SUR NUMERO
+
+    @ManyToOne
+    @JoinColumn(name="FK_CRIT", nullable=false)
+  // @Transient
+    private EvaluationCriteria criteria; //TABLE CRITERES_EVALUATION FK_CRIT POINTE SUR NUMERO
 
     public Grade() {
         this(null, null, null);
