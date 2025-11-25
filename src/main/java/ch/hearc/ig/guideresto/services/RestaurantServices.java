@@ -1,40 +1,27 @@
 package ch.hearc.ig.guideresto.services;
 
-
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.*;
-import ch.hearc.ig.guideresto.presentation.Application;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.sql.Connection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class RestaurantServices {
-    private final RestaurantMapper restaurantMapper;
-    private final Connection connection;
-    private final CityMapper cityMapper;
-    private final RestaurantTypeMapper restaurantTypeMapper;
-    private final GradeMapper gradeMapper;
-    private final EvaluationCriteriaMapper evaluationCriteriaMapper;
-    private final BasicEvaluationMapper basicEvaluationMapper;
-    private final CompleteEvaluationMapper completeEvaluationMapper;
     private static final Logger logger = LogManager.getLogger(RestaurantServices.class);
+    private static RestaurantServices INSTANCE;
 
-    public RestaurantServices() {
-        connection = ConnectionUtils.getConnection();
-        this.restaurantMapper = new RestaurantMapper(connection);
-        this.cityMapper = new CityMapper(connection);
-        this.restaurantTypeMapper = new RestaurantTypeMapper(connection);
-        this.gradeMapper = new GradeMapper(connection);
-        this.evaluationCriteriaMapper = new EvaluationCriteriaMapper(connection);
-        this.basicEvaluationMapper = new BasicEvaluationMapper(connection);
-        this.completeEvaluationMapper = new CompleteEvaluationMapper(connection);
+    private RestaurantServices() {
+    }
+    public static RestaurantServices getInstance() {
+        if(INSTANCE == null) {
+            INSTANCE = new RestaurantServices();
+        }
+        return INSTANCE;
     }
 
     public Set<Restaurant> findAllRestaurant() {
