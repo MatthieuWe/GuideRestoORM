@@ -3,7 +3,11 @@ package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.*;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.presentation.Application;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -96,7 +100,7 @@ public class RestaurantServices {
     public Set<Restaurant> searchByName(String search){
         EntityManager em = JpaUtils.getEntityManager();
         try {
-            String searchByName = "SELECT FROM RESTAURANTS r WHERE LOWER(r.nom) LIKE :searchedName ";
+            String searchByName = "SELECT FROM RESTAURANTS r WHERE LOWER(r.nom) LIKE :searchedName";
             TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
             query.setParameter("searchedName", search.toLowerCase());
             return new HashSet<Restaurant>(query.getResultList());
@@ -131,7 +135,7 @@ public class RestaurantServices {
         Integer typeId = type.getId(); // ??? j'y crois zero
         EntityManager em = JpaUtils.getEntityManager();
         try {
-            String searchByType = "SELECT FROM RESTAURANTS r WHERE v.fk_type LIKE :searchedType ";
+            String searchByType = "SELECT FROM RESTAURANTS r WHERE r.fk_type LIKE :searchedType";
             TypedQuery<Restaurant> query = em.createQuery(searchByType, Restaurant.class);
             query.setParameter("searchedType", typeId);
             return new HashSet<Restaurant>(query.getResultList());
@@ -146,8 +150,15 @@ public class RestaurantServices {
     }
 
     public City createCity(String zipCode, String cityName) {
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
         City city = new City(zipCode, cityName);
-        return cityMapper.create(city);
+        em.persist(city);
+        tx.commit();
+        em.close();
+        return city; //à tester la persistance
     }
 
     /*
@@ -167,42 +178,84 @@ public class RestaurantServices {
             logger.error("Error - Couldn't retreive host IP address");
             ipAddress = "Indisponible";
         }
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
         BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);
-        return basicEvaluationMapper.create(eval);
+        restaurant.getEvaluations().add(eval);//ici je dois faire quelque chose pour la FK non ?
+
+        em.persist(eval);
+        tx.commit();
+        em.close();
+
+        return eval; //basicEvaluationMapper.create(eval); à voir à nouveau si c'est tout bon comme ça ou pas ?
     }
 
     public CompleteEvaluation createCompleteEvaluation(Restaurant restaurant, String comment, String username) {
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
         CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        eval = completeEvaluationMapper.create(eval);
-        restaurant.getEvaluations().add(eval);
+        //eval = completeEvaluationMapper.create(eval);
+        restaurant.getEvaluations().add(eval); //ici je dois faire quelque chose pour la FK non ?
+
+        em.persist(eval);
+        tx.commit();
+        em.close();
+
         return eval;
     }
 
     public Grade createGrade(Integer note, CompleteEvaluation eval, EvaluationCriteria currentCriteria) {
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
         Grade grade = new Grade(note, eval, currentCriteria);
-        eval.getGrades().add(grade);
-        return gradeMapper.create(grade);
+        eval.getGrades().add(grade);//ici je dois faire quelque chose pour la FK non ?
+
+        em.persist(grade);
+        tx.commit();
+        em.close();
+
+        return grade;
     }
 
-    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {
-        if (newType != null && newType != restaurant.getType()) {
-            restaurant.getType().getRestaurants().remove(restaurant); // Il faut d'abord supprimer notre restaurant puisque le type va peut-être changer
-            restaurant.setType(newType);
-            newType.getRestaurants().add(restaurant);
-        }
-        if (newCity != null && newCity != restaurant.getAddress().getCity()) {
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant); // On supprime l'adresse de la ville
-            restaurant.getAddress().setCity(newCity);
-            newCity.getRestaurants().add(restaurant);
-        }
-            restaurantMapper.update(restaurant);
+    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) { //je pense que ça marche pas
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+
+        em.detach(restaurant);
+        restaurant.setType(newType);
+        restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
+        em.merge(restaurant);
+
+        tx.commit();
+        em.close();
+
     }
 
     public boolean deleteRestaurant(Restaurant restaurant){
-        restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
-        restaurant.getType().getRestaurants().remove(restaurant);
-        return restaurantMapper.delete(restaurant);
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
+        em.remove(restaurant);
+
+        //restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
+        //restaurant.getType().getRestaurants().remove(restaurant);
+
+        tx.commit();
+        em.close();
+
+        return true; //je dois réfléchir
     }
 
     public void shutdown() {
