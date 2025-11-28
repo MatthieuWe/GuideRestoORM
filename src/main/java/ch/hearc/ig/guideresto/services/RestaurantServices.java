@@ -3,16 +3,11 @@ package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.*;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.presentation.Application;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.Inet4Address;
-import java.net.JarURLConnection;
 import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.util.Date;
