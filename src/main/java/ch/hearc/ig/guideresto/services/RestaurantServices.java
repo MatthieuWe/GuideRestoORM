@@ -28,13 +28,13 @@ public class RestaurantServices {
 
     public RestaurantServices() {
         connection = ConnectionUtils.getConnection();
+        em = JpaUtils.getEntityManager();
     }
 
     public Set<Restaurant> findAllRestaurant() {
-        EntityManager em = JpaUtils.getEntityManager();
         try {
-            String findAllRestaurant = "SELECT r FROM RESTAURANTS r";
-            TypedQuery<Restaurant> query = em.createNamedQuery(findAllRestaurant, Restaurant.class);
+            String findAllRestaurant = "SELECT r FROM Restaurant r";
+            TypedQuery<Restaurant> query = em.createQuery(findAllRestaurant, Restaurant.class);
             return new HashSet<Restaurant>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching all restaurants: " + e.getMessage());
@@ -48,10 +48,9 @@ public class RestaurantServices {
     }
 
     public Set<RestaurantType> findAllRestaurantType() {
-        EntityManager em = JpaUtils.getEntityManager();
         try {
-            String findAllRestaurantType = "SELECT r FROM TYPES_GASTRONOMIQUES r";
-            TypedQuery<RestaurantType> query = em.createNamedQuery(findAllRestaurantType, RestaurantType.class);
+            String findAllRestaurantType = "SELECT t FROM RestaurantType t ";
+            TypedQuery<RestaurantType> query = em.createQuery(findAllRestaurantType, RestaurantType.class);
             return new HashSet<RestaurantType>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching all restaurant types: " + e.getMessage());
@@ -65,10 +64,9 @@ public class RestaurantServices {
     }
 
     public Set<City> findAllCities(){
-        EntityManager em = JpaUtils.getEntityManager();
         try {
-            String findAllCity = "SELECT r FROM VILLES r";
-            TypedQuery<City> query = em.createNamedQuery(findAllCity, City.class);
+            String findAllCity = "SELECT c FROM City c";
+            TypedQuery<City> query = em.createQuery(findAllCity, City.class);
             return new HashSet<City>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching all cities: " + e.getMessage());
@@ -84,8 +82,8 @@ public class RestaurantServices {
     public Set<EvaluationCriteria> findAllEvaluationCriteria() {
         EntityManager em = JpaUtils.getEntityManager();
         try {
-            String findAllEvalCriteria = "SELECT r FROM CRITERES_EVALUATION r";
-            TypedQuery<EvaluationCriteria> query = em.createNamedQuery(findAllEvalCriteria, EvaluationCriteria.class);
+            String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
+            TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
             return new HashSet<EvaluationCriteria>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
@@ -98,9 +96,8 @@ public class RestaurantServices {
     }
 
     public Set<Restaurant> searchByName(String search){
-        EntityManager em = JpaUtils.getEntityManager();
         try {
-            String searchByName = "SELECT FROM RESTAURANTS r WHERE LOWER(r.nom) LIKE :searchedName";
+            String searchByName = "SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE :searchedName";
             TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
             query.setParameter("searchedName", search.toLowerCase());
             return new HashSet<Restaurant>(query.getResultList());
@@ -116,7 +113,7 @@ public class RestaurantServices {
     public Set<Restaurant> searchByCity(String search){
         EntityManager em = JpaUtils.getEntityManager();
         try {
-            String searchByCity = "SELECT FROM RESTAURANTS r INNER JOIN VILLES v ON v.numero = r.fk_vill WHERE LOWER(v.nom) LIKE :searchedCity ";
+            String searchByCity = "SELECT r FROM RESTAURANTS r INNER JOIN VILLES v ON v.numero = r.fk_vill WHERE LOWER(v.nom) LIKE :searchedCity ";
             TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class);
             query.setParameter("searchByCity", search.toLowerCase());
             return new HashSet<Restaurant>(query.getResultList());
