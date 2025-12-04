@@ -1,8 +1,9 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.FakeItems;
+//import ch.hearc.ig.guideresto.persistence.FakeItems;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import ch.hearc.ig.guideresto.services.RestaurantServices;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import org.apache.logging.log4j.LogManager;
@@ -20,23 +21,12 @@ public class Application {
 
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
+    private static RestaurantServices restaurantServices;
 
     public static void main(String[] args) {
-        // start test
-        EntityManager em = JpaUtils.getEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        City city1 = em.find(City.class, 1);
-        System.out.println(city1.getCityName());
-        Set<Restaurant> restaurants = city1.getRestaurants();
-        for (Restaurant resto : restaurants)
-            System.out.println(resto.getName());
-        Evaluation be = em.find(BasicEvaluation.class, 7);
-        System.out.println(((BasicEvaluation)be).getIpAddress() + " - " + be.getVisitDate());
-        em.close();
-
-        // end test
 
         scanner = new Scanner(System.in);
+        restaurantServices = new RestaurantServices();
 
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;
@@ -45,6 +35,9 @@ public class Application {
             choice = readInt();
             proceedMainMenu(choice);
         } while (choice != 0);
+
+        scanner.close();
+        restaurantServices.shutdown(); // close the EntityManager
     }
 
     /**
@@ -123,8 +116,7 @@ public class Application {
      */
     private static void showRestaurantsList() {
         System.out.println("Liste des restaurants : ");
-
-        Restaurant restaurant = pickRestaurant(FakeItems.getAllRestaurants());
+        Restaurant restaurant = pickRestaurant(restaurantServices.findAllRestaurant());
 
         if (restaurant != null) { // Si l'utilisateur a choisi un restaurant, on l'affiche, sinon on ne fait rien et l'application va réafficher le menu principal
             showRestaurant(restaurant);
@@ -138,19 +130,8 @@ public class Application {
         System.out.println("Veuillez entrer une partie du nom recherché : ");
         String research = readString();
 
-        // Comme on ne peut pas faire de requête SQL avec la classe FakeItems, on trie les données manuellement.
-        // Il est évident qu'une fois que vous utiliserez une base de données, il ne faut PAS garder ce système.
-        Set<Restaurant> fullList = FakeItems.getAllRestaurants();
-        Set<Restaurant> filteredList = new LinkedHashSet();
-
-        for (Restaurant currentRestaurant : fullList) { // On parcourt la liste complète et on ajoute les restaurants correspondants à la liste filtrée.
-            if (currentRestaurant.getName().toUpperCase().contains(research.toUpperCase())) { // On met tout en majuscules pour ne pas tenir compte de la casse
-                filteredList.add(currentRestaurant);
-            }
-        }
-
+        Set<Restaurant> filteredList = restaurantServices.searchByName(research);
         Restaurant restaurant = pickRestaurant(filteredList);
-
         if (restaurant != null) {
             showRestaurant(restaurant);
         }
@@ -163,19 +144,8 @@ public class Application {
         System.out.println("Veuillez entrer une partie du nom de la ville désirée : ");
         String research = readString();
 
-        // Comme on ne peut pas faire de requête SQL avec la classe FakeItems, on trie les données manuellement.
-        // Il est évident qu'une fois que vous utiliserez une base de données, il ne faut PAS garder ce système.
-        Set<Restaurant> fullList = FakeItems.getAllRestaurants();
-        Set<Restaurant> filteredList = new LinkedHashSet();
-
-        for (Restaurant currentRestaurant : fullList) { // On parcourt la liste complète et on ajoute les restaurants correspondants à la liste filtrée.
-            if (currentRestaurant.getAddress().getCity().getCityName().toUpperCase().contains(research.toUpperCase())) { // On met tout en majuscules pour ne pas tenir compte de la casse
-                filteredList.add(currentRestaurant);
-            }
-        }
-
+        Set<Restaurant> filteredList = restaurantServices.searchByCity(research);
         Restaurant restaurant = pickRestaurant(filteredList);
-
         if (restaurant != null) {
             showRestaurant(restaurant);
         }
@@ -200,11 +170,10 @@ public class Application {
             City city = new City();
             city.setId(1); // A modifier quand on a la connexion avec la BDD.
             System.out.println("Veuillez entrer le NPA de la nouvelle ville : ");
-            city.setZipCode(readString());
+            String zipCode = readString();
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
-            city.setCityName(readString());
-            FakeItems.getCities().add(city);
-            return city;
+            String cityName = readString();
+            return restaurantServices.createCity(zipCode, cityName); //ça retrourne un city donc ça doit être okay ... à tester
         }
 
         return searchCityByZipCode(cities, choice);
@@ -231,23 +200,11 @@ public class Application {
      * Si l'utilisateur sélectionne un restaurant, ce dernier lui sera affiché.
      */
     private static void searchRestaurantByType() {
-        // Comme on ne peut pas faire de requête SQL avec la classe FakeItems, on trie les données manuellement.
-        // Il est évident qu'une fois que vous utiliserez une base de données, il ne faut PAS garder ce système.
-        Set<Restaurant> fullList = FakeItems.getAllRestaurants();
-        Set<Restaurant> filteredList = new LinkedHashSet();
+        RestaurantType chosenType = pickRestaurantType(restaurantServices.findAllRestaurantType());
 
-        RestaurantType chosenType = pickRestaurantType(FakeItems.getRestaurantTypes());
+        //TODO : Comment gérer si chosenType est null ? (l'utilisateur a mal saisi le libellé)
 
-        if (chosenType != null) { // Si l'utilisateur a sélectionné un type, sinon on ne fait rien et la liste sera vide.
-            for (Restaurant currentRestaurant : fullList) {
-                if (currentRestaurant.getType() == chosenType) {
-                    filteredList.add(currentRestaurant);
-                }
-            }
-        }
-
-        Restaurant restaurant = pickRestaurant(filteredList);
-
+        Restaurant restaurant = pickRestaurant(restaurantServices.searchByType(chosenType));
         if (restaurant != null) {
             showRestaurant(restaurant);
         }
@@ -269,18 +226,18 @@ public class Application {
         City city = null;
         do
         { // La sélection d'une ville est obligatoire, donc l'opération se répètera tant qu'aucune ville n'est sélectionnée.
-            city = pickCity(FakeItems.getCities());
+            city = pickCity(restaurantServices.findAllCities());
         } while (city == null);
         RestaurantType restaurantType = null;
         do
         { // La sélection d'un type est obligatoire, donc l'opération se répètera tant qu'aucun type n'est sélectionné.
-            restaurantType = pickRestaurantType(FakeItems.getRestaurantTypes());
+            restaurantType = pickRestaurantType(restaurantServices.findAllRestaurantType());
         } while (restaurantType == null);
 
         Restaurant restaurant = new Restaurant(1, name, description, website, street, city, restaurantType);
         city.getRestaurants().add(restaurant);
         restaurantType.getRestaurants().add(restaurant);
-        FakeItems.getAllRestaurants().add(restaurant);
+        restaurantServices.findAllRestaurant().add(restaurant); //yoo ça marche ??? Je sais pas :) À tester
 
         showRestaurant(restaurant);
     }
@@ -444,7 +401,7 @@ public class Application {
 
         Grade grade; // L'utilisateur va saisir une note pour chaque critère existant.
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
-        for (EvaluationCriteria currentCriteria : FakeItems.getEvaluationCriterias()) {
+        for (EvaluationCriteria currentCriteria : restaurantServices.findAllEvaluationCriteria()) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
             grade = new Grade(1, note, eval, currentCriteria);
@@ -471,7 +428,7 @@ public class Application {
         restaurant.setWebsite(readString());
         System.out.println("Nouveau type de restaurant : ");
 
-        RestaurantType newType = pickRestaurantType(FakeItems.getRestaurantTypes());
+        RestaurantType newType = pickRestaurantType(restaurantServices.findAllRestaurantType());
         if (newType != null && newType != restaurant.getType()) {
             restaurant.getType().getRestaurants().remove(restaurant); // Il faut d'abord supprimer notre restaurant puisque le type va peut-être changer
             restaurant.setType(newType);
@@ -493,7 +450,7 @@ public class Application {
         System.out.println("Nouvelle rue : ");
         restaurant.getAddress().setStreet(readString());
 
-        City newCity = pickCity(FakeItems.getCities());
+        City newCity = pickCity(restaurantServices.findAllCities());
         if (newCity != null && newCity != restaurant.getAddress().getCity()) {
             restaurant.getAddress().getCity().getRestaurants().remove(restaurant); // On supprime l'adresse de la ville
             restaurant.getAddress().setCity(newCity);
@@ -512,7 +469,7 @@ public class Application {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equals("o") || choice.equals("O")) {
-            FakeItems.getAllRestaurants().remove(restaurant);
+            restaurantServices.findAllRestaurant().remove(restaurant);
             restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
             restaurant.getType().getRestaurants().remove(restaurant);
             System.out.println("Le restaurant a bien été supprimé !");

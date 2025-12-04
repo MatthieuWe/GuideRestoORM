@@ -2,72 +2,123 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.*;
-import ch.hearc.ig.guideresto.presentation.Application;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.sql.Connection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class RestaurantServices {
-    private final RestaurantMapper restaurantMapper;
-    private final Connection connection;
-    private final CityMapper cityMapper;
-    private final RestaurantTypeMapper restaurantTypeMapper;
-    private final GradeMapper gradeMapper;
-    private final EvaluationCriteriaMapper evaluationCriteriaMapper;
-    private final BasicEvaluationMapper basicEvaluationMapper;
-    private final CompleteEvaluationMapper completeEvaluationMapper;
     private static final Logger logger = LogManager.getLogger(RestaurantServices.class);
+    private final EntityManager em ;
 
     public RestaurantServices() {
-        connection = ConnectionUtils.getConnection();
-        this.restaurantMapper = new RestaurantMapper(connection);
-        this.cityMapper = new CityMapper(connection);
-        this.restaurantTypeMapper = new RestaurantTypeMapper(connection);
-        this.gradeMapper = new GradeMapper(connection);
-        this.evaluationCriteriaMapper = new EvaluationCriteriaMapper(connection);
-        this.basicEvaluationMapper = new BasicEvaluationMapper(connection);
-        this.completeEvaluationMapper = new CompleteEvaluationMapper(connection);
+        em = JpaUtils.getEntityManager();
     }
 
     public Set<Restaurant> findAllRestaurant() {
-        return restaurantMapper.findAll();
+        try {
+            String findAllRestaurant = "SELECT r FROM Restaurant r";
+            TypedQuery<Restaurant> query = em.createQuery(findAllRestaurant, Restaurant.class);
+            return new HashSet<Restaurant>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching all restaurants: " + e.getMessage());
+            throw new RuntimeException("Error while fetching all restaurants: " + e.getMessage());
+        }
+
     }
+
     public Set<RestaurantType> findAllRestaurantType() {
-        return restaurantTypeMapper.findAll();
+        try {
+            String findAllRestaurantType = "SELECT t FROM RestaurantType t ";
+            TypedQuery<RestaurantType> query = em.createQuery(findAllRestaurantType, RestaurantType.class);
+            return new HashSet<RestaurantType>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching all restaurant types: " + e.getMessage());
+            throw new RuntimeException("Error while fetching all restaurant types: " + e.getMessage());
+        }
     }
 
     public Set<City> findAllCities(){
-        return cityMapper.findAll();
+        try {
+            String findAllCity = "SELECT c FROM City c";
+            TypedQuery<City> query = em.createQuery(findAllCity, City.class);
+            return new HashSet<City>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching all cities: " + e.getMessage());
+            throw new RuntimeException("Error while fetching all cities: " + e.getMessage());
+        }
+
+
     }
     public Set<EvaluationCriteria> findAllEvaluationCriteria() {
-        return evaluationCriteriaMapper.findAll();
+        EntityManager em = JpaUtils.getEntityManager();
+        try {
+            String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
+            TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
+            return new HashSet<EvaluationCriteria>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
+            throw new RuntimeException("Error while fetching all evaluation criteria: " + e.getMessage());
+        }
     }
 
     public Set<Restaurant> searchByName(String search){
-        return restaurantMapper.findByName(search);
+        try {
+            String searchByName = "SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE :searchedName";
+            TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
+            query.setParameter("searchedName", "%" + search.toLowerCase() + "%");
+            return new HashSet<Restaurant>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching restaurant by name: " + e.getMessage());
+            throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
+        }
     }
     public Set<Restaurant> searchByCity(String search){
-        Set<City> cities = cityMapper.findByName(search);
-        Set<Restaurant> restaurants = new HashSet<>();
-        for (City city : cities){
-            restaurants.addAll(restaurantMapper.findForCity(city));
+        EntityManager em = JpaUtils.getEntityManager();
+        try {
+            String searchByCity = "SELECT r FROM Restaurant r WHERE LOWER(r.address.city.cityName) LIKE :searchedCity ";
+            TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class);
+            query.setParameter("searchedCity", "%" + search.toLowerCase() + "%");
+            return new HashSet<Restaurant>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching restaurant by name: " + e.getMessage());
+            throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
         }
-        return restaurants;
     }
     public Set<Restaurant> searchByType(RestaurantType type){
-        return restaurantMapper.findForType(type);
+        //ici il faut trouver un moyen de transformer le type en quelque chose qui peut ensuite être cherché
+        //retrouver son ID dans notre base de donnée ?
+        Integer typeId = type.getId(); // ??? j'y crois zero - moi j'y crois *1000 (MW)
+        try {
+            String searchByType = "SELECT r FROM Restaurant r WHERE r.type.id = :searchedType";
+            // par contre c'est pas opti de chercher l'ID après une jointure. On pourrait chercher directement sur la fk...
+            // d'après Gemini, JPQL est assez malin pour optimiser la requete et éviter la jointure. on ne doit se préoccuper
+            // que de la navigation en mode objet. a tester avec showSQL = true pour voir si c'est vrai
+            TypedQuery<Restaurant> query = em.createQuery(searchByType, Restaurant.class);
+            query.setParameter("searchedType", typeId);
+            return new HashSet<Restaurant>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching restaurants by type: " + e.getMessage());
+            throw new RuntimeException("Error while fetching restaurant by types: " + e.getMessage());
+        }
     }
+
     public City createCity(String zipCode, String cityName) {
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
         City city = new City(zipCode, cityName);
-        return cityMapper.create(city);
+        em.persist(city);
+        tx.commit();
+        return city; //à tester la persistance
     }
 
     /*
@@ -87,46 +138,78 @@ public class RestaurantServices {
             logger.error("Error - Couldn't retreive host IP address");
             ipAddress = "Indisponible";
         }
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
         BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);
-        return basicEvaluationMapper.create(eval);
+        restaurant.getEvaluations().add(eval);//ici je dois faire quelque chose pour la FK non ?
+
+        em.persist(eval);
+        tx.commit();
+
+        return eval; //basicEvaluationMapper.create(eval); à voir à nouveau si c'est tout bon comme ça ou pas ?
     }
 
     public CompleteEvaluation createCompleteEvaluation(Restaurant restaurant, String comment, String username) {
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
         CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        eval = completeEvaluationMapper.create(eval);
-        restaurant.getEvaluations().add(eval);
+        //eval = completeEvaluationMapper.create(eval);
+        restaurant.getEvaluations().add(eval); //ici je dois faire quelque chose pour la FK non ?
+
+        em.persist(eval);
+        tx.commit();
+
         return eval;
     }
 
     public Grade createGrade(Integer note, CompleteEvaluation eval, EvaluationCriteria currentCriteria) {
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
         Grade grade = new Grade(note, eval, currentCriteria);
-        eval.getGrades().add(grade);
-        return gradeMapper.create(grade);
+        eval.getGrades().add(grade);//ici je dois faire quelque chose pour la FK non ?
+
+        em.persist(grade);
+        tx.commit();
+
+        return grade;
     }
 
-    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {
-        if (newType != null && newType != restaurant.getType()) {
-            restaurant.getType().getRestaurants().remove(restaurant); // Il faut d'abord supprimer notre restaurant puisque le type va peut-être changer
-            restaurant.setType(newType);
-            newType.getRestaurants().add(restaurant);
-        }
-        if (newCity != null && newCity != restaurant.getAddress().getCity()) {
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant); // On supprime l'adresse de la ville
-            restaurant.getAddress().setCity(newCity);
-            newCity.getRestaurants().add(restaurant);
-        }
-            restaurantMapper.update(restaurant);
+    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) { //je pense que ça marche pas
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+
+        em.detach(restaurant);
+        restaurant.setType(newType);
+        restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
+        em.merge(restaurant);
+
+        tx.commit();
+
     }
 
     public boolean deleteRestaurant(Restaurant restaurant){
-        restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
-        restaurant.getType().getRestaurants().remove(restaurant);
-        return restaurantMapper.delete(restaurant);
+        EntityTransaction tx = em.getTransaction();
+
+        tx.begin();
+
+        em.remove(restaurant);
+
+        //restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
+        //restaurant.getType().getRestaurants().remove(restaurant);
+
+        tx.commit();
+
+        return true; //je dois réfléchir
     }
 
     public void shutdown() {
-        ConnectionUtils.closeConnection();
+        em.close();
     }
 
 }
