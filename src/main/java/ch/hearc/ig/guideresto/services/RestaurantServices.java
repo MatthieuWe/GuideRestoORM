@@ -2,9 +2,7 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
-import ch.hearc.ig.guideresto.presentation.Application;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TypedQuery;
@@ -13,21 +11,15 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.sql.Connection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class RestaurantServices {
-    private final Connection connection;
     private static final Logger logger = LogManager.getLogger(RestaurantServices.class);
-    private EntityManager em ;
-
-
+    private final EntityManager em ;
 
     public RestaurantServices() {
-        connection = ConnectionUtils.getConnection();
         em = JpaUtils.getEntityManager();
     }
 
@@ -39,10 +31,6 @@ public class RestaurantServices {
         } catch (Exception e) {
             logger.error("Error while fetching all restaurants: " + e.getMessage());
             throw new RuntimeException("Error while fetching all restaurants: " + e.getMessage());
-        } finally {
-          if(em != null && em.isOpen()) {
-              em.close();
-          }
         }
 
     }
@@ -55,12 +43,7 @@ public class RestaurantServices {
         } catch (Exception e) {
             logger.error("Error while fetching all restaurant types: " + e.getMessage());
             throw new RuntimeException("Error while fetching all restaurant types: " + e.getMessage());
-        } finally {
-            if(em != null && em.isOpen()) {
-                em.close();
-            }
         }
-
     }
 
     public Set<City> findAllCities(){
@@ -71,10 +54,6 @@ public class RestaurantServices {
         } catch (Exception e) {
             logger.error("Error while fetching all cities: " + e.getMessage());
             throw new RuntimeException("Error while fetching all cities: " + e.getMessage());
-        } finally {
-            if(em != null && em.isOpen()) {
-                em.close();
-            }
         }
 
 
@@ -88,10 +67,6 @@ public class RestaurantServices {
         } catch (Exception e) {
             logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
             throw new RuntimeException("Error while fetching all evaluation criteria: " + e.getMessage());
-        } finally {
-            if(em != null && em.isOpen()) {
-                em.close();
-            }
         }
     }
 
@@ -99,15 +74,11 @@ public class RestaurantServices {
         try {
             String searchByName = "SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE :searchedName";
             TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
-            query.setParameter("searchedName", search.toLowerCase());
+            query.setParameter("searchedName", "%" + search.toLowerCase() + "%");
             return new HashSet<Restaurant>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching restaurant by name: " + e.getMessage());
             throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
-        } finally {
-            if(em != null && em.isOpen()) {
-                em.close();
-            }
         }
     }
     public Set<Restaurant> searchByCity(String search){
@@ -115,15 +86,11 @@ public class RestaurantServices {
         try {
             String searchByCity = "SELECT r FROM Restaurant r WHERE LOWER(r.address.city.cityName) LIKE :searchedCity ";
             TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class);
-            query.setParameter("searchedCity", search.toLowerCase());
+            query.setParameter("searchedCity", "%" + search.toLowerCase() + "%");
             return new HashSet<Restaurant>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching restaurant by name: " + e.getMessage());
             throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
-        } finally {
-            if(em != null && em.isOpen()) {
-                em.close();
-            }
         }
     }
     public Set<Restaurant> searchByType(RestaurantType type){
@@ -133,16 +100,14 @@ public class RestaurantServices {
         try {
             String searchByType = "SELECT r FROM Restaurant r WHERE r.type.id = :searchedType";
             // par contre c'est pas opti de chercher l'ID après une jointure. On pourrait chercher directement sur la fk...
+            // d'après Gemini, JPQL est assez malin pour optimiser la requete et éviter la jointure. on ne doit se préoccuper
+            // que de la navigation en mode objet. a tester avec showSQL = true pour voir si c'est vrai
             TypedQuery<Restaurant> query = em.createQuery(searchByType, Restaurant.class);
             query.setParameter("searchedType", typeId);
             return new HashSet<Restaurant>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching restaurants by type: " + e.getMessage());
             throw new RuntimeException("Error while fetching restaurant by types: " + e.getMessage());
-        } finally {
-            if(em != null && em.isOpen()) {
-                em.close();
-            }
         }
     }
 
@@ -153,7 +118,6 @@ public class RestaurantServices {
         City city = new City(zipCode, cityName);
         em.persist(city);
         tx.commit();
-        em.close();
         return city; //à tester la persistance
     }
 
@@ -183,7 +147,6 @@ public class RestaurantServices {
 
         em.persist(eval);
         tx.commit();
-        em.close();
 
         return eval; //basicEvaluationMapper.create(eval); à voir à nouveau si c'est tout bon comme ça ou pas ?
     }
@@ -199,7 +162,6 @@ public class RestaurantServices {
 
         em.persist(eval);
         tx.commit();
-        em.close();
 
         return eval;
     }
@@ -214,7 +176,6 @@ public class RestaurantServices {
 
         em.persist(grade);
         tx.commit();
-        em.close();
 
         return grade;
     }
@@ -229,7 +190,6 @@ public class RestaurantServices {
         em.merge(restaurant);
 
         tx.commit();
-        em.close();
 
     }
 
@@ -244,13 +204,12 @@ public class RestaurantServices {
         //restaurant.getType().getRestaurants().remove(restaurant);
 
         tx.commit();
-        em.close();
 
         return true; //je dois réfléchir
     }
 
     public void shutdown() {
-        ConnectionUtils.closeConnection();
+        em.close();
     }
 
 }

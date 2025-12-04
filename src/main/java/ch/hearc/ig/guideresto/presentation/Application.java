@@ -21,24 +21,12 @@ public class Application {
 
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
-    private static RestaurantServices restaurantServices = new RestaurantServices();
+    private static RestaurantServices restaurantServices;
 
     public static void main(String[] args) {
-        // start test
-        EntityManager em = JpaUtils.getEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        City city1 = em.find(City.class, 1);
-        System.out.println(city1.getCityName());
-        Set<Restaurant> restaurants = city1.getRestaurants();
-        for (Restaurant resto : restaurants)
-            System.out.println(resto.getName());
-        Evaluation be = em.find(BasicEvaluation.class, 7);
-        System.out.println(((BasicEvaluation)be).getIpAddress() + " - " + be.getVisitDate());
-        em.close();
-
-        // end test
 
         scanner = new Scanner(System.in);
+        restaurantServices = new RestaurantServices();
 
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;
@@ -47,6 +35,9 @@ public class Application {
             choice = readInt();
             proceedMainMenu(choice);
         } while (choice != 0);
+
+        scanner.close();
+        restaurantServices.shutdown(); // close the EntityManager
     }
 
     /**
