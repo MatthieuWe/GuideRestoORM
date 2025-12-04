@@ -113,9 +113,9 @@ public class RestaurantServices {
     public Set<Restaurant> searchByCity(String search){
         EntityManager em = JpaUtils.getEntityManager();
         try {
-            String searchByCity = "SELECT r FROM RESTAURANTS r INNER JOIN VILLES v ON v.numero = r.fk_vill WHERE LOWER(v.nom) LIKE :searchedCity ";
+            String searchByCity = "SELECT r FROM Restaurant r WHERE LOWER(r.address.city.cityName) LIKE :searchedCity ";
             TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class);
-            query.setParameter("searchByCity", search.toLowerCase());
+            query.setParameter("searchedCity", search.toLowerCase());
             return new HashSet<Restaurant>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching restaurant by name: " + e.getMessage());
@@ -129,10 +129,10 @@ public class RestaurantServices {
     public Set<Restaurant> searchByType(RestaurantType type){
         //ici il faut trouver un moyen de transformer le type en quelque chose qui peut ensuite être cherché
         //retrouver son ID dans notre base de donnée ?
-        Integer typeId = type.getId(); // ??? j'y crois zero
-        EntityManager em = JpaUtils.getEntityManager();
+        Integer typeId = type.getId(); // ??? j'y crois zero - moi j'y crois *1000 (MW)
         try {
-            String searchByType = "SELECT FROM RESTAURANTS r WHERE r.fk_type LIKE :searchedType";
+            String searchByType = "SELECT r FROM Restaurant r WHERE r.type.id = :searchedType";
+            // par contre c'est pas opti de chercher l'ID après une jointure. On pourrait chercher directement sur la fk...
             TypedQuery<Restaurant> query = em.createQuery(searchByType, Restaurant.class);
             query.setParameter("searchedType", typeId);
             return new HashSet<Restaurant>(query.getResultList());
@@ -147,7 +147,6 @@ public class RestaurantServices {
     }
 
     public City createCity(String zipCode, String cityName) {
-        EntityManager em = JpaUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
@@ -175,7 +174,6 @@ public class RestaurantServices {
             logger.error("Error - Couldn't retreive host IP address");
             ipAddress = "Indisponible";
         }
-        EntityManager em = JpaUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
@@ -191,7 +189,6 @@ public class RestaurantServices {
     }
 
     public CompleteEvaluation createCompleteEvaluation(Restaurant restaurant, String comment, String username) {
-        EntityManager em = JpaUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
@@ -208,7 +205,6 @@ public class RestaurantServices {
     }
 
     public Grade createGrade(Integer note, CompleteEvaluation eval, EvaluationCriteria currentCriteria) {
-        EntityManager em = JpaUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
@@ -224,7 +220,6 @@ public class RestaurantServices {
     }
 
     public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) { //je pense que ça marche pas
-        EntityManager em = JpaUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
         tx.begin();
 
@@ -239,7 +234,6 @@ public class RestaurantServices {
     }
 
     public boolean deleteRestaurant(Restaurant restaurant){
-        EntityManager em = JpaUtils.getEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
