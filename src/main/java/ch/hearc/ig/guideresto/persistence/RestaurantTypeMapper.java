@@ -2,93 +2,37 @@ package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.RestaurantType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.sql.*;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
-    private final Connection connection;
-
-    public RestaurantTypeMapper(Connection connection) {
-        this.connection = connection;
+   private final Connection connection;
+   
+   public RestaurantTypeMapper(Connection connection) {
+      this.connection=connection;
+   }
+   
+   public RestaurantType findById(int id, EntityManager em) {
+      RestaurantType type=null;
+      type=em.find(RestaurantType.class, id);
+      return type;
+   }
+    
+    public RestaurantType findByLabel(String label, EntityManager em) {
+       String query = "SELECT r FROM TYPES_GASTRONOMIQUES r WHERE r.libelle LIKE '%"+label+"%'";
+       TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
+       return (RestaurantType) typeQuery.getResultList();
     }
 
-    public RestaurantType findById(int id) {
-        if (super.cache.containsKey(id)) {
-            return (RestaurantType) super.cache.get(id);
-        } else {
-            RestaurantType type = null;
-            try {
-                PreparedStatement s = connection.prepareStatement("SELECT * FROM types_gastronomiques WHERE numero = ?");
-                s.setInt(1, id);
-                ResultSet rs = s.executeQuery();
-                // recherche sur la clé primaire donc max 1 resultat
-                // sinon on remplirait une List avec une boucle while
-                if(rs.next()) {
-                    type = new RestaurantType(
-                            rs.getInt("numero"),
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-                    this.addToCache(type);
-                } else {
-                    logger.error("No such restaurant type");
-                }
-                rs.close();
-            } catch (SQLException e) {
-                logger.error("SQLException: {}", e.getMessage());
-            }
-            return type;
-        }
+    public Set<RestaurantType> findAll(EntityManager em) {
+       String query = "SELECT r FROM TYPES_GASTRONOMIQUES r";
+       TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
+       return new HashSet<>(typeQuery.getResultList());
     }
-    public RestaurantType findByLabel(String label) {
-        RestaurantType type = null;
-        try {
-            PreparedStatement s = connection.prepareStatement("SELECT * FROM types_gastronomiques WHERE libelle = ?");
-            s.setString(1, label);
-            ResultSet rs = s.executeQuery();
-            // le libelle est une colonne a contrainte unique
-            if(rs.next()) {
-                type = new RestaurantType(
-                        rs.getInt("numero"),
-                        rs.getString("libelle"),
-                        rs.getString("description")
-                );
-                this.addToCache(type);
-            } else {
-                logger.error("No such restaurant type");
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return type;
-    }
-
-    public Set<RestaurantType> findAll() {
-        Set<RestaurantType> types = new HashSet<>();
-        super.resetCache();
-        try {
-            PreparedStatement s = connection.prepareStatement("SELECT * FROM types_gastronomiques");
-            ResultSet rs = s.executeQuery();
-            while(rs.next()) {
-                RestaurantType type = new RestaurantType(
-                        rs.getInt("numero"),
-                        rs.getString("libelle"),
-                        rs.getString("description")
-                );
-                types.add(type);
-                super.addToCache(type);
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return types;
-    }
+    
     public RestaurantType create(RestaurantType type) {
         try {
             String generatedColumns[] = { "numero" };
@@ -168,3 +112,4 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return "SELECT Count(*) FROM types_gastronomiques";
     }
 }
+
