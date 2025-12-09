@@ -32,14 +32,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return true;
 
     }
-    protected String getSequenceQuery(){
-        return "SELECT seq_types_gastronomiques.NextVal FROM dual";
-    }
-    protected String getExistsQuery() {
-        return "SELECT numero FROM types_gastronomiques WHERE numero = ?";
-    }
+    
     protected String getCountQuery() {
-        return "SELECT Count(*) FROM types_gastronomiques";
+        return "SELECT Count(t) FROM types_gastronomiques t";
     }
 }
 
