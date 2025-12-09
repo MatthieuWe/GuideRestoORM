@@ -1,6 +1,8 @@
 package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.City;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -8,158 +10,30 @@ import java.sql.*;
 
 public class CityMapper extends AbstractMapper<City> {
     private final Connection connection;
-
-
+    
     public CityMapper(Connection connection) {
         this.connection = connection;
     }
 
-    public City findById(int id) {
-        City city = null;
-        if (super.cache.containsKey(id)) {
-            city = (City) super.cache.get(id);
-        } else {
-            try {
-                PreparedStatement s = connection.prepareStatement("SELECT * FROM villes WHERE numero = ?");
-                s.setInt(1, id);
-                ResultSet rs = s.executeQuery();
-                if(rs.next()) {
-                    city = new City(
-                            rs.getInt("numero"),
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-                    super.addToCache(city);
-                } else {
-                    logger.error("No such city");
-                }
-                rs.close();
-            } catch (SQLException e) {
-                logger.error("SQLException: {}", e.getMessage());
-            }
-        }
-        return city;
+    public Set<City> findAll(EntityManager em) {
+        String query =  "SELECT v FROM villes v";
+        TypedQuery<City> cityQuery = em.createQuery(query, City.class);
+        return new HashSet<>(cityQuery.getResultList());
     }
-
-    public Set<City> findAll() {
-        Set<City> cities = new HashSet<>();
-        super.resetCache();
-        try {
-            PreparedStatement s = connection.prepareStatement("SELECT * FROM villes");
-            ResultSet rs = s.executeQuery();
-            while(rs.next()) {
-                City city = new City(
-                        rs.getInt("numero"),
-                        rs.getString("code_postal"),
-                        rs.getString("nom_ville")
-                );
-                cities.add(city);
-                super.addToCache(city);
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return cities;
+    
+    public Set<City> findByName(EntityManager em, String partialName) {
+        String query = "SELECT v FROM villes v WHERE v.nom_ville LIKE '%"+partialName+"%'";
+        TypedQuery<City> cityQuery = em.createQuery(query, City.class);
+        return new HashSet<>(cityQuery.getResultList());
     }
-    public Set<City> findByName(String partialName) {
-        Set<City> cities = new HashSet<>();
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "SELECT * FROM villes" +
-                            " WHERE Upper(nom_ville) LIKE Upper(?)");
-            s.setString(1, "%" + partialName + "%");
-            ResultSet rs = s.executeQuery();
-            while(rs.next()) {
-                int id = rs.getInt("numero");
-                if(super.cache.containsKey(id)) {
-                    cities.add((City) super.cache.get(id));
-                } else {
-                    City city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-                    cities.add(city);
-                    super.addToCache(city);
-                }
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return cities;
+    
+    public boolean delete(EntityManager em, City city) {
+       em.remove(city);
+       return true;
     }
-    public City create(City city) {
-        try {
-            String generatedColumns[] = { "numero" };
-            PreparedStatement s = connection.prepareStatement(
-                    "INSERT INTO villes (code_postal, nom_ville)" +
-                            "VALUES (?, ?)",
-                    generatedColumns);
-            s.setString(1, city.getZipCode());
-            s.setString(2, city.getCityName());
-            s.executeUpdate();
-            ResultSet rs = s.getGeneratedKeys();
-            if (rs.next()) {
-                city.setId(rs.getInt(1));
-                super.addToCache(city);
-            } else {
-                logger.warn("Failed to insert city into the table: ", city.getCityName() + ". Continuing..." );
-            }
-            rs.close();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return city;
-    }
-    public boolean update(City city) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "UPDATE villes SET code_postal = ?, nom_ville = ? WHERE numero = ?");
-            s.setString(1, city.getZipCode());
-            s.setString(2, city.getCityName());
-            s.setInt(3, city.getId());
-            affectedRows = s.executeUpdate();
-            connection.commit();
-            super.addToCache(city);
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return affectedRows > 0;
-    }
-    public boolean delete(City city) {
-        return this.deleteById(city.getId());
-    }
-    public boolean deleteById(int id) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "DELETE villes WHERE numero = ?");
-            s.setInt(1, id);
-            affectedRows = s.executeUpdate();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        if(affectedRows > 0) {
-            super.removeFromCache(id);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    protected String getSequenceQuery(){
-        return "SELECT seq_villes.NextVal FROM dual";
-    }
-    protected String getExistsQuery() {
-        return "SELECT numero FROM villes WHERE numero = ?";
-    }
+    
     protected String getCountQuery() {
-        return "SELECT Count(*) FROM villes";
+        return "SELECT Count(v) FROM villes v";
     }
 
 }
