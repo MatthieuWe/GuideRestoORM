@@ -2,207 +2,41 @@
 package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.*;
-import jakarta.persistence.Entity;
-import oracle.jdbc.proxy.annotation.Pre;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 
-import java.sql.*;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GradeMapper extends AbstractMapper<Grade> {
-    private final Connection connection;
+    public Set<Grade> findByEvaluation(EntityManager em, CompleteEvaluation ce) {
+        String jpqlQuery = "SELECT gra FROM Grade gra WHERE gra.evaluation = :evaluation";
+        TypedQuery<Grade> query = em.createQuery(jpqlQuery, Grade.class);
+        query.setParameter("evaluation", ce);
+        Set<Grade> grades = query.getResultStream()
+                .collect(Collectors.toSet());
 
-    public GradeMapper(Connection connection) {
-        this.connection = connection;
-    }
-
-    private Grade loadGrade(ResultSet rs) throws SQLException {
-        CompleteEvaluation eval = new CompleteEvaluation(
-                rs.getInt("num_comm"),
-                rs.getDate("date_eval"),
-                super.loadRestaurant(rs),
-                rs.getString("commentaire"),
-                rs.getString("nom_utilisateur")
-        );
-        return this.loadGrade(rs, eval);
-    }
-    private Grade loadGrade(ResultSet rs, CompleteEvaluation eval) throws SQLException {
-        EvaluationCriteria crit = new EvaluationCriteria(
-                rs.getInt("num_ce"),
-                rs.getString("nom_ce"),
-                rs.getString("desc_ce")
-        );
-        return new Grade(
-                rs.getInt("num_note"),
-                rs.getInt("note"),
-                eval,
-                crit
-        );
+        return grades;
     }
 
     @Override
-    public Grade findById(int id) {
-        Grade grade = null;
-        if (super.cache.containsKey(id)) {
-            grade = (Grade) super.cache.get(id);
-        } else {
-            try {
-            // AAAAHHHAHHAA elle est énorme! Et en plus ça sert a rien on appelera jamais cette méthode...
-                PreparedStatement s = connection.prepareStatement("SELECT n.numero num_note, n.note, n.fk_comm, n.fk_crit,"+
-                    " co.numero num_comm, co.date_eval, co.commentaire, co.nom_utilisateur," +
-                    " ce.numero num_ce, ce.nom nom_ce, ce.description desc_ce," +
-                    " r.numero num_resto, r.nom, r.description desc_resto, r.site_web," +
-                    " r.adresse, v.numero num_ville, v.nom_ville, v.code_postal," +
-                    " t.numero num_type, t.libelle, t.description desc_type" +
-                    " FROM notes n" +
-                    " INNER JOIN commentaires co ON n.fk_comm = co.numero" +
-                    " INNER JOIN criteres_evaluation ce ON n.fk_crit = ce.numero"+
-                    " INNER JOIN restaurants r ON co.fk_rest = r.numero" +
-                    " INNER JOIN villes v ON r.fk_ville = v.numero" +
-                    " INNER JOIN types_gastronomiques t ON r.fk_type = t.numero" +
-                    " WHERE n.numero = ?");
-                s.setInt(1, id);
-                ResultSet rs = s.executeQuery();
+    public Set<Grade> findAll(EntityManager em) {
+        String jpqlQuery = "SELECT gra FROM Grade gra";
+        Set<Grade> grades = em.createQuery(jpqlQuery, Grade.class)
+                .getResultStream()
+                .collect(Collectors.toSet());
 
-                if(rs.next()) {
-                    grade = this.loadGrade(rs);
-                    super.addToCache(grade);
-                } else {
-                    logger.error("No grade found");
-                }
-                rs.close();
-            } catch (SQLException e) {
-                logger.error("SQLException: " + e.getMessage());
-            }
-        }
-        return grade;
-    }
-
-    public Set<Grade> findAll() {
-        Set<Grade> grades = new HashSet<>();
-        super.resetCache();
-        try {
-            PreparedStatement s = connection.prepareStatement("SELECT n.numero num_note, n.note, n.fk_comm, n.fk_crit,"+
-                    " co.numero num_comm, co.date_eval, co.commentaire, co.nom_utilisateur," +
-                    " ce.numero num_ce, ce.nom nom_ce, ce.description desc_ce," +
-                    " r.numero num_resto, r.nom, r.description desc_resto, r.site_web," +
-                    " r.adresse, v.numero num_ville, v.nom_ville, v.code_postal," +
-                    " t.numero num_type, t.libelle, t.description desc_type" +
-                    " FROM notes n" +
-                    " INNER JOIN commentaires co ON n.fk_comm = co.numero" +
-                    " INNER JOIN criteres_evaluation ce ON n.fk_crit = ce.numero"+
-                    " INNER JOIN restaurants r ON co.fk_rest = r.numero" +
-                    " INNER JOIN villes v ON r.fk_ville = v.numero" +
-                    " INNER JOIN types_gastronomiques t ON r.fk_type = t.numero");
-            ResultSet rs = s.executeQuery();
-            while (rs.next()) {
-                Grade grade = this.loadGrade(rs);
-                grades.add(grade);
-                super.addToCache(grade);
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: " + e.getMessage());
-        }
         return grades;
     }
 
-    public Grade create(Grade grade) {
-        try {
-            String generatedColumns[] = {"numero"};
-            PreparedStatement s = connection.prepareStatement(
-                    "INSERT INTO notes(note,fk_comm, fk_crit)" +
-                            "VALUES (?, ?, ?)",
-                    generatedColumns);
-            s.setInt(1, grade.getGrade());
-            s.setInt(2, grade.getEvaluation().getId());
-            s.setInt(3, grade.getCriteria().getId());
-            s.executeUpdate();
-            ResultSet rs = s.getGeneratedKeys();
-            if (rs.next()) {
-                grade.setId(rs.getInt(1));
-                super.addToCache(grade);
-            } else{
-                logger.warn("Failed to insert grade into the table", grade.getGrade() + ". Continuing...");
-            }
-            rs.close();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: " + e.getMessage());
-        }
-        return grade;
+    @Override
+    public boolean delete(EntityManager em, Grade grade) {
+        em.remove(grade);
+        return true;
     }
 
-    public boolean update(Grade grade) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "UPDATE notes"+
-                        " SET note = ?, fk_comm = ?, fk_crit = ?"+
-                        " WHERE numero = ?");
-            s.setInt(1, grade.getGrade());
-            s.setInt(2, grade.getEvaluation().getId());
-            s.setInt(3, grade.getCriteria().getId());
-            affectedRows = s.executeUpdate();
-            connection.commit();
-            super.addToCache(grade);
-        }catch (SQLException e) {
-            logger.error("SQLException: " + e.getMessage());
-        }
-        return affectedRows > 0;
-    }
-
-    public boolean delete(Grade grade) { return this.deleteById(grade.getId()); }
-
-    public boolean deleteById(int id) {
-        int affectedRows = 0;
-        try{
-            PreparedStatement s = connection.prepareStatement(
-                    "DELETE notes WHERE numero = ? ");
-            s.setInt(1, id);
-            affectedRows = s.executeUpdate();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: " + e.getMessage());
-        }
-        if(affectedRows > 0) {
-            super.removeFromCache(id);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    protected String getSequenceQuery() {return "SELECT seq_notes.NextVal FROM dual";}
-    protected String getExistsQuery() {return "SELECT numero FROM notes WHERE numero = ? ";}
-    protected String getCountQuery() {return "SELECT count(*) FROM notes";}
-
-    public Set<Grade> findForCompleteEvaluation(CompleteEvaluation evaluation) {
-        Set<Grade> grades = new HashSet<>();
-        try {
-            PreparedStatement s = connection.prepareStatement("SELECT n.numero as numeroNote, n.note, n.fk_comm, n.fk_crit,"+
-                    " ce.numero as NumeroCE, ce.nom as nomCe, ce.description as descriptionCe," +
-                    " co.numero as numCom, co.nom as nomCom, co.description as descriptionCom" +
-                    " FROM notes n" +
-                    " INNER JOIN commentaires co ON n.fk_comm = co.numero" +
-                    " INNER JOIN criteres_evaluation ce ON n.fk_crit = ce.numero"+
-                    " WHERE numCom = ?");
-            s.setInt(1, evaluation.getId());
-            ResultSet rs = s.executeQuery();
-            while (rs.next()) {
-                int id = rs.getInt("numeroNote");
-                if (super.cache.containsKey(id)) {
-                    grades.add((Grade) super.cache.get(id));
-                } else {
-                    Grade grade = this.loadGrade(rs, evaluation);
-                    grades.add(grade);
-                    super.addToCache(grade);
-                }
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: " + e.getMessage());
-        }
-        return grades;
+    @Override
+    protected String getCountQuery() {
+        return "SELECT Count(gra) FROM Grade gra";
     }
 }
