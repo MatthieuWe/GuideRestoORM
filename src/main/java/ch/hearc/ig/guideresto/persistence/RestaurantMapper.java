@@ -3,26 +3,16 @@ package ch.hearc.ig.guideresto.persistence;
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.sql.*;
 import java.util.stream.Collectors;
-
 
 public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
-
-    public RestaurantMapper() {
-    }
-
-    public Restaurant findById(int id, EntityManager em) {
-        return em.find(Restaurant.class, id);
-    }
-    public Set<Restaurant> findForCity(City city, EntityManager em) {
+    public Set<Restaurant> findByCity(EntityManager em, City city) {
         try {
             String searchByCity = "SELECT r FROM Restaurant r WHERE r.address.city.id = :cityId";
             TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class);
@@ -33,7 +23,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             throw new RuntimeException("Error while fetching restaurants by city: " + e.getMessage());
         }
     }
-    public Set<Restaurant> findForType(RestaurantType type, EntityManager em) {
+    public Set<Restaurant> findByType(EntityManager em, RestaurantType type) {
         try {
 
             String searchByType = "SELECT r FROM Restaurant r WHERE r.type.id = :typeId";
@@ -43,6 +33,18 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         } catch (Exception e) {
             logger.error("Error while fetching restaurants by type: " + e.getMessage());
             throw new RuntimeException("Error while fetching restaurants by type: " + e.getMessage());
+        }
+    }
+
+    public Set<Restaurant> findByName(EntityManager em, String searchedName) {
+        try {
+        String searchByName = "SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE :searchedName";
+        TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
+        query.setParameter("searchedName", "%" + searchedName.toLowerCase() + "%");
+        return new HashSet<>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching restaurant by name: " + e.getMessage());
+            throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
         }
     }
 
@@ -56,16 +58,16 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             throw new RuntimeException("Error while fetching all restaurants: " + e.getMessage());
         }
     }
-    public Set<Restaurant> findByName(String searchedName, EntityManager em) {
-        try {
-        String searchByName = "SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE :searchedName";
-        TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
-        query.setParameter("searchedName", "%" + searchedName.toLowerCase() + "%");
-        return new HashSet<>(query.getResultList());
-        } catch (Exception e) {
-            logger.error("Error while fetching restaurant by name: " + e.getMessage());
-            throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
-        }
+
+    @Override
+    public boolean delete(EntityManager em, Restaurant resto) {
+        em.remove(resto);
+        return true;
+    }
+
+    @Override
+    protected String getCountQuery() {
+        return "SELECT Count(res) FROM Restaurant res";
     }
 
 
