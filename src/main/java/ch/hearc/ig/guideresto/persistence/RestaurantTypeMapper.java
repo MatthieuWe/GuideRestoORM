@@ -77,6 +77,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     public boolean delete(EntityManager em, RestaurantType restaurantType) {
         em.remove(restaurantType);
+        return true;
     }
 
     protected String getSequenceQuery(){
