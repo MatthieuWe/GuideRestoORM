@@ -14,12 +14,6 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
    public RestaurantTypeMapper(Connection connection) {
       this.connection=connection;
    }
-   
-   public RestaurantType findById(int id, EntityManager em) {
-      RestaurantType type=null;
-      type=em.find(RestaurantType.class, id);
-      return type;
-   }
     
     public RestaurantType findByLabel(String label, EntityManager em) {
        String query = "SELECT r FROM TYPES_GASTRONOMIQUES r WHERE r.libelle LIKE '%"+label+"%'";
