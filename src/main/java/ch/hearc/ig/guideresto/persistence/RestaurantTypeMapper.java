@@ -74,27 +74,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         }
         return affectedRows > 0;
     }
-    public boolean delete(RestaurantType type) {
-        return this.deleteById(type.getId());
-    }
-    
-    public boolean delete(EntityManager em, int id) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "DELETE types_gastronomiques WHERE numero = ?");
-            s.setInt(1, id);
-            affectedRows = s.executeUpdate();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        if(affectedRows > 0) {
-            super.removeFromCache(id);
-            return true;
-        } else {
-            return false;
-        }
+
+    public boolean delete(EntityManager em, RestaurantType restaurantType) {
+        em.remove(restaurantType);
     }
 
     protected String getSequenceQuery(){
