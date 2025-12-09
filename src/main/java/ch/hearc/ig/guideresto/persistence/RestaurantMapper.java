@@ -25,7 +25,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     public Set<Restaurant> findForCity(City city, EntityManager em) {
         try {
             String searchByCity = "SELECT r FROM Restaurant r WHERE r.address.city.id = :cityId";
-            TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class); // C'est faux je sais c'est juste pour la réflection
+            TypedQuery<Restaurant> query = em.createQuery(searchByCity, Restaurant.class);
             query.setParameter("cityId", city.getId());
             return new HashSet<>(query.getResultList());
         }catch (Exception e) {
@@ -35,6 +35,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
     public Set<Restaurant> findForType(RestaurantType type, EntityManager em) {
         try {
+
             String searchByType = "SELECT r FROM Restaurant r WHERE r.type.id = :typeId";
             TypedQuery<Restaurant> query = em.createQuery(searchByType, Restaurant.class);
             query.setParameter("typeId", type.getId());

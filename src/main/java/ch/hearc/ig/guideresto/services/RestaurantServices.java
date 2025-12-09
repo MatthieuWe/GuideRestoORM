@@ -155,32 +155,48 @@ public class RestaurantServices {
         return grade;
     }
 
-    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) { //je pense que ça marche pas
+    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {
         EntityTransaction tx = em.getTransaction();
-        tx.begin();
+        try{
+            restaurant = em.find(Restaurant.class, restaurant.getId());
+            if (restaurant == null) {
+                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
+                return;
+            }
+            tx.begin();
+            em.detach(restaurant);
+            restaurant.setType(newType);
+            restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
+            em.merge(restaurant);
 
-        em.detach(restaurant);
-        restaurant.setType(newType);
-        restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
-        em.merge(restaurant);
-
-        tx.commit();
-
+            tx.commit();
+        } catch (Exception e) {
+            logger.error("Error while updating restaurant: " + e.getMessage());
+            tx.rollback();
+        }
     }
 
     public boolean deleteRestaurant(Restaurant restaurant){
         EntityTransaction tx = em.getTransaction();
+        try {
+            restaurant = em.find(Restaurant.class, restaurant.getId());
+            if (restaurant == null) {
+                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for deletion.");
+                return false;
+            }
+            tx.begin();
+            for (Evaluation eval : new HashSet<>(restaurant.getEvaluations())) {
+                em.remove(eval);
+            }
+            em.remove(restaurant);
+            tx.commit();
+            return true;
 
-        tx.begin();
-
-        em.remove(restaurant);
-
-        //restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
-        //restaurant.getType().getRestaurants().remove(restaurant);
-
-        tx.commit();
-
-        return true; //je dois réfléchir
+        } catch (Exception e) {
+            logger.error("Error while deleting associated evaluations: " + e.getMessage());
+            tx.rollback();
+            return false;
+        }
     }
 
     public void shutdown() {
