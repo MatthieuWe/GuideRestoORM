@@ -27,59 +27,11 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
        return new HashSet<>(typeQuery.getResultList());
     }
     
-    public RestaurantType create(RestaurantType type) {
-        try {
-            String generatedColumns[] = { "numero" };
-            PreparedStatement s = connection.prepareStatement(
-                    "INSERT INTO types_gastronomiques (libelle, description)" +
-                    "VALUES (?, ?)",
-                    generatedColumns);
-            s.setString(1, type.getLabel());
-            s.setString(2, type.getDescription());
-            s.executeUpdate();
-            ResultSet rs = s.getGeneratedKeys();
-            if (rs.next()) {
-                type.setId(rs.getInt(1));
-                super.addToCache(type);
-            } else {
-                logger.warn("Failed to insert type into the table: ", type.getLabel() + ". Continuing..." );
-            }
-            rs.close();
-            connection.commit();
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1) {
-                // le type existe deja: violation de contrainte unique sur le libelle
-                // -> on gère. retourne l'id comme si tout s'était bien passé.
-                type = this.findByLabel(type.getLabel());
-                logger.warn("Type already exists: " + type.getLabel() + ". Continuing...");
-            } else {
-            logger.error("SQLException: {}", e.getMessage());
-            }
-        }
-        return type;
-    }
-    public boolean update(RestaurantType type) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "UPDATE types_gastronomiques SET libelle = ?, description = ? WHERE numero = ?");
-            s.setString(1, type.getLabel());
-            s.setString(2, type.getDescription());
-            s.setInt(3, type.getId());
-            affectedRows = s.executeUpdate();
-            super.addToCache(type);
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return affectedRows > 0;
-    }
-
     public boolean delete(EntityManager em, RestaurantType restaurantType) {
         em.remove(restaurantType);
         return true;
-    }
 
+    }
     protected String getSequenceQuery(){
         return "SELECT seq_types_gastronomiques.NextVal FROM dual";
     }
