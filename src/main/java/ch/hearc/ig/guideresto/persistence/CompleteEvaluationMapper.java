@@ -3,193 +3,42 @@ package ch.hearc.ig.guideresto.persistence;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Evaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 
-import java.sql.*;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation> {
-    private final Connection connection;
 
-    public CompleteEvaluationMapper(Connection connection) {
-        this.connection = connection;
-    }
+    public Set<Evaluation> findByRestaurant(EntityManager em, Restaurant resto) {
+        String jpqlQuery = "SELECT ce FROM CompleteEvaluation ce WHERE ce.restaurant = :restaurant";
+        TypedQuery<CompleteEvaluation> query = em.createQuery(jpqlQuery, CompleteEvaluation.class);
+        query.setParameter("restaurant", resto);
+        Set<Evaluation> completeEvaluations = query.getResultStream()
+                .collect(Collectors.toSet());
 
-    public CompleteEvaluation findById(int id) {
-        CompleteEvaluation completeEvaluation = null;
-        if (super.cache.containsKey(id)) {
-            completeEvaluation = (CompleteEvaluation) super.cache.get(id);
-        } else {
-            try {
-                PreparedStatement s = connection.prepareStatement(
-                    "SELECT c.numero num_comm, c.date_eval, c.commentaire, c.nom_utilisateur" +
-                            " r.numero num_resto, r.nom, r.description desc_resto, r.site_web," +
-                            " r.adresse, v.numero num_ville, v.nom_ville, v.code_postal," +
-                            " t.numero num_type, t.libelle, t.description desc_type" +
-                            " FROM commentaires c" +
-                            " INNER JOIN restaurants r ON c.fk_rest = r.numero" +
-                            " INNER JOIN villes v ON r.fk_ville = v.numero" +
-                            " INNER JOIN types_gastronomiques t ON r.fk_type = t.numero" +
-                            " WHERE c.numero = ?");
-                s.setInt(1, id);
-                ResultSet rs = s.executeQuery();
-                if(rs.next()) {
-                    Restaurant restaurant = super.loadRestaurant(rs);
-                    completeEvaluation = new CompleteEvaluation(
-                        rs.getInt("num_comm"),
-                        rs.getDate("date_eval"),
-                        restaurant,
-                        rs.getString("commentaire"),
-                        rs.getString("nom_utilisateur")
-                    );
-                } else {
-                    logger.error("No such city");
-                }
-                rs.close();
-            } catch (SQLException e) {
-                logger.error("SQLException: {}", e.getMessage());
-            }
-        }
-        return completeEvaluation;
-    }
-    public Set<Evaluation> findForRestaurant(Restaurant resto) {
-        Set<Evaluation> completeEvaluations = new HashSet<>();
-        try {
-            PreparedStatement s = connection.prepareStatement("SELECT * FROM commentaires WHERE fk_rest = ?");
-            s.setInt(1, resto.getId());
-            ResultSet rs = s.executeQuery();
-            while(rs.next()) {
-                int id = rs.getInt("numero");
-                if (super.cache.containsKey(id)) {
-                    completeEvaluations.add((CompleteEvaluation) super.cache.get(id));
-                } else {
-                    CompleteEvaluation ce = new CompleteEvaluation(
-                            rs.getInt("numero"),
-                            rs.getDate("date_eval"),
-                            resto,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-                    completeEvaluations.add(ce);
-                    super.addToCache(ce);
-                }
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
         return completeEvaluations;
     }
-    public Set<CompleteEvaluation> findAll() {
-        Set<CompleteEvaluation> completeEvaluations = new HashSet<>();
-        super.resetCache();
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "SELECT c.numero num_comm, c.date_eval, c.commentaire, c.nom_utilisateur" +
-                            " r.numero num_resto, r.nom, r.description desc_resto, r.site_web," +
-                            " r.adresse, v.numero num_ville, v.nom_ville, v.code_postal," +
-                            " t.numero num_type, t.libelle, t.description desc_type" +
-                            " FROM commentaires c" +
-                            " INNER JOIN restaurants r ON c.fk_rest = r.numero" +
-                            " INNER JOIN villes v ON r.fk_ville = v.numero" +
-                            " INNER JOIN types_gastronomiques t ON r.fk_type = t.numero" +
-                            " WHERE c.numero = ?");
-            ResultSet rs = s.executeQuery();
-            while(rs.next()) {
-                Restaurant restaurant = super.loadRestaurant(rs);
-                CompleteEvaluation completeEvaluation = new CompleteEvaluation(
-                        rs.getInt("num_comm"),
-                        rs.getDate("date_eval"),
-                        restaurant,
-                        rs.getString("commentaire"),
-                        rs.getString("nom_utilisateur")
-                );
-                completeEvaluations.add(completeEvaluation);
-                super.addToCache(completeEvaluation);
-            }
-            rs.close();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
+
+    @Override
+    public Set<CompleteEvaluation> findAll(EntityManager em) {
+        String jpqlQuery = "SELECT ce FROM CompleteEvaluation ce";
+        Set<CompleteEvaluation> completeEvaluations = em.createQuery(jpqlQuery, CompleteEvaluation.class)
+                .getResultStream()
+                .collect(Collectors.toSet());
+
         return completeEvaluations;
     }
-    public CompleteEvaluation create(CompleteEvaluation completeEvaluation) {
-        try {
-            String generatedColumns[] = { "numero" };
-            PreparedStatement s = connection.prepareStatement(
-                    "INSERT INTO commentaires (date_eval, commentaire, nom_utilisateur, fk_rest)" +
-                            "VALUES (?, ?, ?, ?)",
-                    generatedColumns);
-            s.setDate(1, new Date(completeEvaluation.getVisitDate().getTime()));
-            s.setString(2, completeEvaluation.getComment());
-            s.setString(3, completeEvaluation.getUsername());
-            s.setInt(4, completeEvaluation.getRestaurant().getId());
-            s.executeUpdate();
-            ResultSet rs = s.getGeneratedKeys();
-            if (rs.next()) {
-                completeEvaluation.setId(rs.getInt(1));
-                super.addToCache(completeEvaluation);
-            } else {
-                logger.warn("Failed to insert comment into the table: ", completeEvaluation.getVisitDate() + ". Continuing..." );
-            }
-            rs.close();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return completeEvaluation;
-    }
-    public boolean update(CompleteEvaluation completeEvaluation) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "UPDATE commentaires"+
-                            "SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest = ? "
-                    +"WHERE numero = ?");
-            s.setDate(1, new Date(completeEvaluation.getVisitDate().getTime()));
-            s.setString(2, completeEvaluation.getComment());
-            s.setString(3, completeEvaluation.getUsername());
-            s.setInt(4, completeEvaluation.getRestaurant().getId());
-            s.setInt(5, completeEvaluation.getId());
 
-            affectedRows = s.executeUpdate();
-            connection.commit();
-            super.addToCache(completeEvaluation);
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        return affectedRows > 0;
-    }
-    public boolean delete(CompleteEvaluation completeEvaluation) {
-        return this.deleteById(completeEvaluation.getId());
-    }
-    public boolean deleteById(int id) {
-        int affectedRows = 0;
-        try {
-            PreparedStatement s = connection.prepareStatement(
-                    "DELETE commentaires WHERE numero = ?");
-            s.setInt(1, id);
-            affectedRows = s.executeUpdate();
-            connection.commit();
-        } catch (SQLException e) {
-            logger.error("SQLException: {}", e.getMessage());
-        }
-        if(affectedRows > 0) {
-            super.removeFromCache(id);
-            return true;
-        } else {
-            return false;
-        }
+    @Override
+    public boolean delete(EntityManager em, CompleteEvaluation completeEvaluation) {
+        em.remove(completeEvaluation);
+        return true;
     }
 
-    protected String getSequenceQuery(){
-        return "SELECT seq_commentaires.NextVal FROM dual";
-    }
-    protected String getExistsQuery() {
-        return "SELECT numero FROM commentaires WHERE numero = ?";
-    }
+    @Override
     protected String getCountQuery() {
-        return "SELECT Count(*) FROM commentaires";
+        return "SELECT Count(ce) FROM CompleteEvaluation ce";
     }
-
 }
