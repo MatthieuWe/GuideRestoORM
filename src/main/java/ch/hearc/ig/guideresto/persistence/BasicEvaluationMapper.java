@@ -32,7 +32,8 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     }
 
     @Override
-    public boolean delete(BasicEvaluation basicEvaluation) {
+    public boolean delete(EntityManager em, BasicEvaluation basicEvaluation) {
+        em.remove(basicEvaluation);
         return true;
     }
 

@@ -15,7 +15,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
 
     protected static final Logger logger = LogManager.getLogger();
     public abstract Set<T> findAll(EntityManager em);
-    public abstract boolean delete(T object);
+    public abstract boolean delete(EntityManager em, T object);
 
     protected abstract String getCountQuery();
 
