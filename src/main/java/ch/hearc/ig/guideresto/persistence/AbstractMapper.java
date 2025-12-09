@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.*;
+import jakarta.persistence.EntityManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,16 +18,16 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
     protected static final Logger logger = LogManager.getLogger();
     protected Map<Integer, IBusinessObject> cache = new HashMap<>();
 
-    public abstract T findById(int id);
-    public abstract Set<T> findAll();
-    public abstract T create(T object);
-    public abstract boolean update(T object);
-    public abstract boolean delete(T object);
-    public abstract boolean deleteById(int id);
+    public abstract T findById(int id, EntityManager em);
+    public abstract Set<T> findAll(EntityManager em);
+    //public abstract T create(T object);
+    //public abstract boolean update(T object);
+    //public abstract boolean delete(T object);
+    //public abstract boolean deleteById(int id);
 
-    protected abstract String getSequenceQuery();
-    protected abstract String getExistsQuery();
-    protected abstract String getCountQuery();
+    //protected abstract String getSequenceQuery();
+    //protected abstract String getExistsQuery();
+    //protected abstract String getCountQuery();
 
     /**
      * Vérifie si un objet avec l'ID donné existe.
@@ -34,17 +35,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @return true si l'objet existe, false sinon
      */
     public boolean exists(int id) {
-        Connection connection = ConnectionUtils.getConnection();
-
-        try (PreparedStatement stmt = connection.prepareStatement(getExistsQuery())) {
-            stmt.setInt(1, id);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException ex) {
-            logger.error("SQLException: {}", ex.getMessage());
-        }
+        //TODO hihihi
         return false;
     }
 
@@ -54,18 +45,8 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      */
     public int count() {
         Connection connection = ConnectionUtils.getConnection();
-
-        try (PreparedStatement stmt = connection.prepareStatement(getCountQuery());
-             ResultSet rs = stmt.executeQuery()) {
-
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
-            return 0;
-        } catch (SQLException ex) {
-            logger.error("SQLException: {}", ex.getMessage());
-            return 0;
-        }
+//TO DO ?
+        return 0;
     }
 
     /**
@@ -74,19 +55,9 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @En cas d'erreur SQL
      */
     protected Integer getSequenceValue() {
-        Connection connection = ConnectionUtils.getConnection();
-
-        try (PreparedStatement stmt = connection.prepareStatement(getSequenceQuery());
-             ResultSet rs = stmt.executeQuery()) {
-
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+//TO DO ???
             return 0;
-        } catch (SQLException ex) {
-            logger.error("SQLException: {}", ex.getMessage());
-            return 0;
-        }
+
     }
 
     /**
