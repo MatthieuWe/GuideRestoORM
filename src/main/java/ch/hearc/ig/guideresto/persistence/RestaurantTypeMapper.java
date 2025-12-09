@@ -15,7 +15,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
       this.connection=connection;
    }
     
-    public RestaurantType findByLabel(String label, EntityManager em) {
+    public RestaurantType findByLabel(EntityManager em, String label) {
        String query = "SELECT r FROM TYPES_GASTRONOMIQUES r WHERE r.libelle LIKE '%"+label+"%'";
        TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
        return (RestaurantType) typeQuery.getResultList();
@@ -77,7 +77,8 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     public boolean delete(RestaurantType type) {
         return this.deleteById(type.getId());
     }
-    public boolean deleteById(int id) {
+    
+    public boolean delete(EntityManager em, int id) {
         int affectedRows = 0;
         try {
             PreparedStatement s = connection.prepareStatement(
