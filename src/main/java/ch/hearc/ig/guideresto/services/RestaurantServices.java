@@ -91,8 +91,8 @@ public class RestaurantServices {
     public Set<Restaurant> searchByType(RestaurantType type){
         // TODO wtf mais c'est complètement idiot ??! on recoit un type pour le chercher avant de le repasser plus loin ?!?!
         // en plus on le cherche par son nom alors qu'on a son id ?! ya rien qui va
-        RestaurantType restaurantType = typeMapper.findByName(em, type.getName()); //pareil ici, ça va pas marcher pour l'instant
-        return restaurantMapper.findByType(em, restaurantType);
+        // RestaurantType restaurantType = typeMapper.findByName(em, type.getName()); //pareil ici, ça va pas marcher pour l'instant
+        return restaurantMapper.findByType(em, type);
     }
 
     public City createCity(String zipCode, String cityName) {
