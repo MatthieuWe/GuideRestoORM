@@ -9,20 +9,16 @@ import java.util.*;
 import java.sql.*;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
-   private final Connection connection;
-   
-   public RestaurantTypeMapper(Connection connection) {
-      this.connection=connection;
-   }
-    
+
     public RestaurantType findByLabel(EntityManager em, String label) {
-       String query = "SELECT r FROM TYPES_GASTRONOMIQUES r WHERE r.libelle LIKE '%"+label+"%'";
+       String query = "SELECT ty FROM RestaurantType ty WHERE LOWER(ty.label) = :label";
        TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
-       return (RestaurantType) typeQuery.getResultList();
+       typeQuery.setParameter("label", label.toLowerCase());
+       return typeQuery.getSingleResult();// TODO a tester mais on peut, libelle est UNIQUE
     }
 
     public Set<RestaurantType> findAll(EntityManager em) {
-       String query = "SELECT r FROM TYPES_GASTRONOMIQUES r";
+       String query = "SELECT ty FROM RestaurantType ty";
        TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
        return new HashSet<>(typeQuery.getResultList());
     }
@@ -34,7 +30,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
     
     protected String getCountQuery() {
-        return "SELECT Count(t) FROM types_gastronomiques t";
+        return "SELECT Count(t) FROM RestaurantType t";
     }
 }
 

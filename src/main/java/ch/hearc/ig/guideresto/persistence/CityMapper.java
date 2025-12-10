@@ -6,24 +6,19 @@ import jakarta.persistence.TypedQuery;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.sql.*;
 
 public class CityMapper extends AbstractMapper<City> {
-    private final Connection connection;
-    
-    public CityMapper(Connection connection) {
-        this.connection = connection;
-    }
 
     public Set<City> findAll(EntityManager em) {
-        String query =  "SELECT v FROM villes v";
+        String query =  "SELECT ci FROM City ci";
         TypedQuery<City> cityQuery = em.createQuery(query, City.class);
         return new HashSet<>(cityQuery.getResultList());
     }
     
     public Set<City> findByName(EntityManager em, String partialName) {
-        String query = "SELECT v FROM villes v WHERE v.nom_ville LIKE '%"+partialName+"%'";
+        String query = "SELECT ci FROM City ci WHERE LOWER(ci.cityName) LIKE :name";
         TypedQuery<City> cityQuery = em.createQuery(query, City.class);
+        cityQuery.setParameter("name", "%" + partialName.toLowerCase() + "%");
         return new HashSet<>(cityQuery.getResultList());
     }
     
@@ -33,7 +28,7 @@ public class CityMapper extends AbstractMapper<City> {
     }
     
     protected String getCountQuery() {
-        return "SELECT Count(v) FROM villes v";
+        return "SELECT Count(ci) FROM City ci";
     }
 
 }
