@@ -2,7 +2,9 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.CityMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantMapper;
+import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -22,10 +24,14 @@ public class RestaurantServices {
 
     //mappers
     private RestaurantMapper restaurantMapper ;
+    private CityMapper cityMapper ;
+    private RestaurantTypeMapper typeMapper ;
 
     public RestaurantServices() {
         em = JpaUtils.getEntityManager();
         restaurantMapper = new RestaurantMapper();
+        cityMapper = new CityMapper();
+        typeMapper = new RestaurantTypeMapper();
     }
 
     public Set<Restaurant> findAllRestaurant() {
@@ -78,12 +84,15 @@ public class RestaurantServices {
         }
     }
     public Set<Restaurant> searchByCity(String search){
-        City city = CityMapper.findByName(search, em); //pour qand il y aura un cityMapper, pour l'instant ça va pas marcher ☺️☺️☺️☺️
-        return restaurantMapper.findForCity(city, em);
+        // TODO ya qqch qui sent le fenec ici. on y reviendra
+        City city = cityMapper.findByName(em, search); //pour qand il y aura un cityMapper, pour l'instant ça va pas marcher ☺️☺️☺️☺️
+        return restaurantMapper.findByCity(em, city);
     }
     public Set<Restaurant> searchByType(RestaurantType type){
-        RestaurantType restaurantType = RestaurantTypeMapper.findByName(type.getName(), em); //pareil ici, ça va pas marcher pour l'instant
-        return restaurantMapper.findForType(restaurantType, em);
+        // TODO wtf mais c'est complètement idiot ??! on recoit un type pour le chercher avant de le repasser plus loin ?!?!
+        // en plus on le cherche par son nom alors qu'on a son id ?! ya rien qui va
+        RestaurantType restaurantType = typeMapper.findByName(em, type.getName()); //pareil ici, ça va pas marcher pour l'instant
+        return restaurantMapper.findByType(em, restaurantType);
     }
 
     public City createCity(String zipCode, String cityName) {
