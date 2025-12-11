@@ -83,15 +83,28 @@ public class RestaurantServices {
             throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
         }
     }
+    /*
+    Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
+    et le programme accepte une partie du nom) puis retourne tous les restos de chaque ville correspondante à la recherche
+    Note:
+    Solution A - c'est une opportunité d'utiliser notre cityMapper MAIS
+    Solution B -  c'est plus efficace d'adapter notre méthode findByCity Dans le restaurantMapper pour qu'elle fasse
+    tout ça directement en JPQL avec une jointure. Quand on boucle sur un resultset pour refaire des select, ya un problème
+     */
     public Set<Restaurant> searchByCity(String search){
-        // TODO ya qqch qui sent le fenec ici. on y reviendra
-        City city = cityMapper.findByName(em, search); //pour qand il y aura un cityMapper, pour l'instant ça va pas marcher ☺️☺️☺️☺️
-        return restaurantMapper.findByCity(em, city);
+        // Solution A
+        Set<City> cities = cityMapper.findByName(em, search);
+        Set<Restaurant> restos = new HashSet<>();
+        for (City city : cities) {
+            restos.addAll(restaurantMapper.findByCity(em, city));
+        }
+        return restos;
+        // Solution B - meilleur
+        /*
+        return restaurantMapper.findByCityName(em, search);
+        */
     }
     public Set<Restaurant> searchByType(RestaurantType type){
-        // TODO wtf mais c'est complètement idiot ??! on recoit un type pour le chercher avant de le repasser plus loin ?!?!
-        // en plus on le cherche par son nom alors qu'on a son id ?! ya rien qui va
-        // RestaurantType restaurantType = typeMapper.findByName(em, type.getName()); //pareil ici, ça va pas marcher pour l'instant
         return restaurantMapper.findByType(em, type);
     }
 
