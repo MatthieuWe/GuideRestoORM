@@ -111,14 +111,22 @@ public class RestaurantServices {
         return city; //à tester la persistance
     }
 
-    /*
+
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
-        Restaurant restaurant = new Restaurant(name, description, website, street, city, restaurantType);
-        city.getRestaurants().add(restaurant);
-        restaurantType.getRestaurants().add(restaurant);
-        return restaurantMapper.create(restaurant);
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        Restaurant restaurant = new Restaurant();
+        restaurant.setName(name);
+        restaurant.setDescription(description);
+        restaurant.setWebsite(website);
+        restaurant.setAddress(new Localisation(street, city));
+        restaurant.setType(restaurantType);
+        em.persist(restaurant);
+        tx.commit();
+
+        return restaurant;
     }
-     */
+
 
     public BasicEvaluation createBasicEvaluation(Restaurant restaurant, Boolean like) {
         String ipAddress;
@@ -179,7 +187,7 @@ public class RestaurantServices {
                 return;
             }
             tx.begin();
-            em.detach(restaurant);
+            em.detach(restaurant); // why ??
             restaurant.setType(newType);
             restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
             em.merge(restaurant);
@@ -200,10 +208,12 @@ public class RestaurantServices {
                 return false;
             }
             tx.begin();
+            // TODO c'est pas mieux mais on peut utiliser un de nos mappers ici
             for (Evaluation eval : new HashSet<>(restaurant.getEvaluations())) {
                 em.remove(eval);
             }
             em.remove(restaurant);
+            // TODO vérifier si la ville est encore utilisée et sinon l'effacer aussi
             tx.commit();
             return true;
 

@@ -4,8 +4,7 @@ package ch.hearc.ig.guideresto.business;
  * @author cedric.baudet
  */
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.util.Date;
 import java.util.HashSet;
