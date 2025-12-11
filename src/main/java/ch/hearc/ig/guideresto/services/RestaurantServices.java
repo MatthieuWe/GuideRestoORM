@@ -74,14 +74,7 @@ public class RestaurantServices {
     }
 
     public Set<Restaurant> searchByName(String search){
-        try {
-            TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
-            query.setParameter("searchedName", "%" + search.toLowerCase() + "%");
-            return new HashSet<Restaurant>(query.getResultList());
-        } catch (Exception e) {
-            logger.error("Error while fetching restaurant by name: " + e.getMessage());
-            throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
-        }
+        return restaurantMapper.findByName(em, search);
     }
     /*
     Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
