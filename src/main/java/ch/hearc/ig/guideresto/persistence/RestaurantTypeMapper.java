@@ -28,9 +28,5 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return true;
 
     }
-    
-    protected String getCountQuery() {
-        return "SELECT Count(t) FROM RestaurantType t";
-    }
 }
 

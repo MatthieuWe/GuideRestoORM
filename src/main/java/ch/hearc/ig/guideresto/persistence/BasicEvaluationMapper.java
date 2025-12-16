@@ -36,9 +36,4 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         em.remove(basicEvaluation);
         return true;
     }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(be) FROM BasicEvaluation be";
-    }
 }

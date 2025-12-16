@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 /**
  * @author cedric.baudet
  */
+@NamedQuery(name="Grade.count", query="select count (gr) from Grade gr")
 @Entity
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {

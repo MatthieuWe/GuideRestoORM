@@ -26,9 +26,4 @@ public class CityMapper extends AbstractMapper<City> {
        em.remove(city);
        return true;
     }
-    
-    protected String getCountQuery() {
-        return "SELECT Count(ci) FROM City ci";
-    }
-
 }

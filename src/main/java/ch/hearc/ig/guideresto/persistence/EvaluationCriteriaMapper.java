@@ -31,9 +31,4 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         em.remove(evaluationCriteria);
         return true;
     }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(ec) FROM EvaluationCriteria ec";
-    }
 }

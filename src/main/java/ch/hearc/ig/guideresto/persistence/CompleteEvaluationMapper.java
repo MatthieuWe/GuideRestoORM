@@ -36,9 +36,4 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         em.remove(completeEvaluation);
         return true;
     }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(ce) FROM CompleteEvaluation ce";
-    }
 }

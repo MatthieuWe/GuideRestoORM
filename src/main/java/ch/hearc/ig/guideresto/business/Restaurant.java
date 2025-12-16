@@ -9,6 +9,7 @@ import java.util.Set;
 /**
  * @author cedric.baudet
  */
+@NamedQuery(name="Restaurant.count", query="select count (re) from Restaurant re")
 @Entity
 @Table(name="RESTAURANTS")
 public class Restaurant implements IBusinessObject {

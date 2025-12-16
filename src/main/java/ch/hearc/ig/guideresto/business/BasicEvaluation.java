@@ -2,6 +2,7 @@ package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.Date;
 /**
  * @author cedric.baudet
  */
+@NamedQuery(name="BasicEvaluation.count", query="select count (be) from BasicEvaluation be")
 @Entity
 @Table(name="likes")
 public class BasicEvaluation extends Evaluation {

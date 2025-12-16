@@ -76,11 +76,4 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         // TODO fix this. it's stupid. merci Matthieu.
         return true;
     }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(res) FROM Restaurant res";
-    }
-
-
 }

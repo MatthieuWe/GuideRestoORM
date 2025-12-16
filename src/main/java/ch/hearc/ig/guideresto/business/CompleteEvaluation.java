@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-
+@NamedQuery(name="CompleteEvaluation.count", query="select count (ce) from CompleteEvaluation ce")
 @Entity
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {

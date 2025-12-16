@@ -35,9 +35,4 @@ public class GradeMapper extends AbstractMapper<Grade> {
         em.remove(grade);
         return true;
     }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(gra) FROM Grade gra";
-    }
 }
