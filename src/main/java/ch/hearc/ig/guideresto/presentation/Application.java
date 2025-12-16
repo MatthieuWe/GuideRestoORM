@@ -234,10 +234,7 @@ public class Application {
             restaurantType = pickRestaurantType(restaurantServices.findAllRestaurantType());
         } while (restaurantType == null);
 
-        Restaurant restaurant = new Restaurant(1, name, description, website, street, city, restaurantType);
-        city.getRestaurants().add(restaurant);
-        restaurantType.getRestaurants().add(restaurant);
-        restaurantServices.findAllRestaurant().add(restaurant); //yoo ça marche ??? Je sais pas :) À tester
+        Restaurant restaurant = restaurantServices.createRestaurant(name, description, website, street, city, restaurantType);
 
         showRestaurant(restaurant);
     }

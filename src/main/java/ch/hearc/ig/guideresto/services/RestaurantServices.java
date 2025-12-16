@@ -2,7 +2,9 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.CityMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantMapper;
+import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -22,10 +24,14 @@ public class RestaurantServices {
 
     //mappers
     private RestaurantMapper restaurantMapper ;
+    private CityMapper cityMapper ;
+    private RestaurantTypeMapper typeMapper ;
 
     public RestaurantServices() {
         em = JpaUtils.getEntityManager();
         restaurantMapper = new RestaurantMapper();
+        cityMapper = new CityMapper();
+        typeMapper = new RestaurantTypeMapper();
     }
 
     public Set<Restaurant> findAllRestaurant() {
@@ -68,22 +74,31 @@ public class RestaurantServices {
     }
 
     public Set<Restaurant> searchByName(String search){
-        try {
-            TypedQuery<Restaurant> query = em.createQuery(searchByName, Restaurant.class);
-            query.setParameter("searchedName", "%" + search.toLowerCase() + "%");
-            return new HashSet<Restaurant>(query.getResultList());
-        } catch (Exception e) {
-            logger.error("Error while fetching restaurant by name: " + e.getMessage());
-            throw new RuntimeException("Error while fetching restaurant by name: " + e.getMessage());
-        }
+        return restaurantMapper.findByName(em, search);
     }
+    /*
+    Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
+    et le programme accepte une partie du nom) puis retourne tous les restos de chaque ville correspondante à la recherche
+    Note:
+    Solution A - c'est une opportunité d'utiliser notre cityMapper MAIS
+    Solution B -  c'est plus efficace d'adapter notre méthode findByCity Dans le restaurantMapper pour qu'elle fasse
+    tout ça directement en JPQL avec une jointure. Quand on boucle sur un resultset pour refaire des select, ya un problème
+     */
     public Set<Restaurant> searchByCity(String search){
-        City city = CityMapper.findByName(search, em); //pour qand il y aura un cityMapper, pour l'instant ça va pas marcher ☺️☺️☺️☺️
-        return restaurantMapper.findForCity(city, em);
+        // Solution A
+        Set<City> cities = cityMapper.findByName(em, search);
+        Set<Restaurant> restos = new HashSet<>();
+        for (City city : cities) {
+            restos.addAll(restaurantMapper.findByCity(em, city));
+        }
+        return restos;
+        // Solution B - meilleur
+        /*
+        return restaurantMapper.findByCityName(em, search);
+        */
     }
     public Set<Restaurant> searchByType(RestaurantType type){
-        RestaurantType restaurantType = RestaurantTypeMapper.findByName(type.getName(), em); //pareil ici, ça va pas marcher pour l'instant
-        return restaurantMapper.findForType(restaurantType, em);
+        return restaurantMapper.findByType(em, type);
     }
 
     public City createCity(String zipCode, String cityName) {
@@ -96,14 +111,22 @@ public class RestaurantServices {
         return city; //à tester la persistance
     }
 
-    /*
+
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
-        Restaurant restaurant = new Restaurant(name, description, website, street, city, restaurantType);
-        city.getRestaurants().add(restaurant);
-        restaurantType.getRestaurants().add(restaurant);
-        return restaurantMapper.create(restaurant);
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        Restaurant restaurant = new Restaurant();
+        restaurant.setName(name);
+        restaurant.setDescription(description);
+        restaurant.setWebsite(website);
+        restaurant.setAddress(new Localisation(street, city));
+        restaurant.setType(restaurantType);
+        em.persist(restaurant);
+        tx.commit();
+
+        return restaurant;
     }
-     */
+
 
     public BasicEvaluation createBasicEvaluation(Restaurant restaurant, Boolean like) {
         String ipAddress;
@@ -164,7 +187,7 @@ public class RestaurantServices {
                 return;
             }
             tx.begin();
-            em.detach(restaurant);
+            em.detach(restaurant); // why ??
             restaurant.setType(newType);
             restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
             em.merge(restaurant);
@@ -185,10 +208,12 @@ public class RestaurantServices {
                 return false;
             }
             tx.begin();
+            // TODO c'est pas mieux mais on peut utiliser un de nos mappers ici
             for (Evaluation eval : new HashSet<>(restaurant.getEvaluations())) {
                 em.remove(eval);
             }
             em.remove(restaurant);
+            // TODO vérifier si la ville est encore utilisée et sinon l'effacer aussi
             tx.commit();
             return true;
 
