@@ -11,6 +11,7 @@ import java.util.Date;
  * @author cedric.baudet
  */
 @NamedQuery(name="BasicEvaluation.count", query="select count (be) from BasicEvaluation be")
+@NamedQuery(name="BasicEvaluation.findByRestaurant", query="SELECT be FROM BasicEvaluation be WHERE be.restaurant = :restaurant")
 @Entity
 @Table(name="likes")
 public class BasicEvaluation extends Evaluation {

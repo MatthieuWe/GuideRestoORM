@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     public Set<Evaluation> findByRestaurant(EntityManager em, Restaurant resto) {
-        String jpqlQuery = "SELECT be FROM BasicEvaluation be WHERE be.restaurant = :restaurant";
-        TypedQuery<BasicEvaluation> query = em.createQuery(jpqlQuery, BasicEvaluation.class);
+        TypedQuery<BasicEvaluation> query = em.createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class);
         query.setParameter("restaurant", resto);
         Set<Evaluation> basicEvaluations = query.getResultStream()
                 .collect(Collectors.toSet());

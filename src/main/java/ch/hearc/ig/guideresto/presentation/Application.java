@@ -2,6 +2,7 @@ package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
 //import ch.hearc.ig.guideresto.persistence.FakeItems;
+import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.services.RestaurantServices;
 import jakarta.persistence.EntityManager;
@@ -27,6 +28,11 @@ public class Application {
 
         scanner = new Scanner(System.in);
         restaurantServices = new RestaurantServices();
+
+        Set<Restaurant> restos = restaurantServices.searchByCity("Neuch");
+        for (Restaurant r : restos) {
+            System.out.println(restaurantServices.test(r));
+        }
 
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;

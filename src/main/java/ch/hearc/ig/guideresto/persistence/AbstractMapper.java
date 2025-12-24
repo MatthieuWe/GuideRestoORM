@@ -21,6 +21,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * Compte le nombre d'objets en base de données.
      * @return
      */
+    /*
     public int count() {
         Connection connection = ConnectionUtils.getConnection();
 
@@ -36,4 +37,5 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
             return 0;
         }
     }
+    */
 }

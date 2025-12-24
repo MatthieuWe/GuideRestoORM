@@ -2,6 +2,7 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.CityMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
@@ -226,6 +227,15 @@ public class RestaurantServices {
 
     public void shutdown() {
         em.close();
+    }
+
+    public String test(Restaurant r) {
+        Set<Evaluation> be = new BasicEvaluationMapper().findByRestaurant(em, r);
+        StringBuilder sb = new StringBuilder();
+        for (Evaluation eval : be) {
+            sb.append(eval.toString());
+        }
+        return sb.toString();
     }
 
 }
