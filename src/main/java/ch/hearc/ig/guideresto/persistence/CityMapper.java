@@ -16,8 +16,7 @@ public class CityMapper extends AbstractMapper<City> {
     }
     
     public Set<City> findByName(EntityManager em, String partialName) {
-        String query = "SELECT ci FROM City ci WHERE LOWER(ci.cityName) LIKE :name";
-        TypedQuery<City> cityQuery = em.createQuery(query, City.class);
+        TypedQuery<City> cityQuery = em.createNamedQuery("City.findByName", City.class);
         cityQuery.setParameter("name", "%" + partialName.toLowerCase() + "%");
         return new HashSet<>(cityQuery.getResultList());
     }

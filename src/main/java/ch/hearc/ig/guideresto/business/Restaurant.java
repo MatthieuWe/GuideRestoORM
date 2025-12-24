@@ -10,6 +10,10 @@ import java.util.Set;
  * @author cedric.baudet
  */
 @NamedQuery(name="Restaurant.count", query="select count (re) from Restaurant re")
+@NamedQuery(name="Restaurant.findByCity", query="SELECT r FROM Restaurant r WHERE r.address.city = :city")
+@NamedQuery(name="Restaurant.findByCityName", query="SELECT r FROM Restaurant r WHERE LOWER(r.address.city.cityName) LIKE '%' + LOWER(:name) + '%'")
+@NamedQuery(name="Restaurant.findByType", query="SELECT r FROM Restaurant r WHERE r.type = :type")
+@NamedQuery(name="Restaurant.findByName", query="SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE '%' + LOWER(:name) + '%'")
 @Entity
 @Table(name="RESTAURANTS")
 public class Restaurant implements IBusinessObject {

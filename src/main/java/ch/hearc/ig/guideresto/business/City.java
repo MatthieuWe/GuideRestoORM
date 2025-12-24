@@ -9,6 +9,7 @@ import java.util.Set;
  * @author cedric.baudet
  */
 @NamedQuery(name="City.count", query="select count (ci) from City ci")
+@NamedQuery(name="City.findByName", query = "SELECT ci FROM City ci WHERE LOWER(ci.cityName) LIKE :name")
 @Entity
 @Table(name = "villes")
 public class City implements IBusinessObject {

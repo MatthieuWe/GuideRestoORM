@@ -11,9 +11,8 @@ import java.sql.*;
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     public RestaurantType findByLabel(EntityManager em, String label) {
-       String query = "SELECT ty FROM RestaurantType ty WHERE LOWER(ty.label) = :label";
-       TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
-       typeQuery.setParameter("label", label.toLowerCase());
+       TypedQuery<RestaurantType> typeQuery = em.createNamedQuery("RestaurantType.findByLabel", RestaurantType.class);
+       typeQuery.setParameter("label", label);
        return typeQuery.getSingleResult();// TODO a tester mais on peut, libelle est UNIQUE
     }
 
