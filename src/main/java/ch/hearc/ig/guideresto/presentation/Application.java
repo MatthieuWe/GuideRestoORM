@@ -4,6 +4,7 @@ import ch.hearc.ig.guideresto.business.*;
 //import ch.hearc.ig.guideresto.persistence.FakeItems;
 import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import ch.hearc.ig.guideresto.services.EvaluationServices;
 import ch.hearc.ig.guideresto.services.RestaurantServices;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -23,11 +24,13 @@ public class Application {
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
     private static RestaurantServices restaurantServices;
+    private static EvaluationServices evaluationServices;
 
     public static void main(String[] args) {
 
         scanner = new Scanner(System.in);
         restaurantServices = new RestaurantServices();
+        evaluationServices = new EvaluationServices();
 
         Set<Restaurant> restos = restaurantServices.searchByCity("Neuch");
         for (Restaurant r : restos) {
@@ -173,8 +176,6 @@ public class Application {
         String choice = readString();
 
         if (choice.equals("NEW")) {
-            City city = new City();
-            city.setId(1); // A modifier quand on a la connexion avec la BDD.
             System.out.println("Veuillez entrer le NPA de la nouvelle ville : ");
             String zipCode = readString();
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
@@ -259,8 +260,9 @@ public class Application {
         sb.append(restaurant.getWebsite()).append("\n");
         sb.append(restaurant.getAddress().getStreet()).append(", ");
         sb.append(restaurant.getAddress().getCity().getZipCode()).append(" ").append(restaurant.getAddress().getCity().getCityName()).append("\n");
-        sb.append("Nombre de likes : ").append(countLikes(restaurant.getEvaluations(), true)).append("\n");
-        sb.append("Nombre de dislikes : ").append(countLikes(restaurant.getEvaluations(), false)).append("\n");
+        // C'est l'occasion d'utiliser nos namedqueries pour compter en sql plutot que dans la couche de présentation
+        sb.append("Nombre de likes : ").append(evaluationServices.countLikes(restaurant, true)).append("\n");
+        sb.append("Nombre de dislikes : ").append(evaluationServices.countLikes(restaurant, false)).append("\n");
         sb.append("\nEvaluations reçues : ").append("\n");
 
         String text;
@@ -279,23 +281,6 @@ public class Application {
             choice = readInt();
             proceedRestaurantMenu(choice, restaurant);
         } while (choice != 0 && choice != 6); // 6 car le restaurant est alors supprimé...
-    }
-
-    /**
-     * Parcourt la liste et compte le nombre d'évaluations basiques positives ou négatives en fonction du paramètre likeRestaurant
-     *
-     * @param evaluations    La liste des évaluations à parcourir
-     * @param likeRestaurant Veut-on le nombre d'évaluations positives ou négatives ?
-     * @return Le nombre d'évaluations positives ou négatives trouvées
-     */
-    private static int countLikes(Set<Evaluation> evaluations, Boolean likeRestaurant) {
-        int count = 0;
-        for (Evaluation currentEval : evaluations) {
-            if (currentEval instanceof BasicEvaluation && ((BasicEvaluation) currentEval).getLikeRestaurant() == likeRestaurant) {
-                count++;
-            }
-        }
-        return count;
     }
 
     /**

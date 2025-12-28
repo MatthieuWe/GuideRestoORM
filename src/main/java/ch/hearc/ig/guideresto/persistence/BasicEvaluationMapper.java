@@ -30,6 +30,13 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return basicEvaluations;
     }
 
+    public Long countForRestaurant(EntityManager em, Restaurant resto, Boolean like) {
+        return (Long) em.createNamedQuery("BasicEvaluation.countLikes", Long.class)
+            .setParameter("restaurant", resto)
+            .setParameter("like", like)
+            .getSingleResult();
+    }
+
     @Override
     public boolean delete(EntityManager em, BasicEvaluation basicEvaluation) {
         em.remove(basicEvaluation);
