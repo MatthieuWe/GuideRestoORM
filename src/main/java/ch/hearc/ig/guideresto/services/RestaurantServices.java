@@ -62,17 +62,6 @@ public class RestaurantServices {
 
 
     }
-    public Set<EvaluationCriteria> findAllEvaluationCriteria() {
-        EntityManager em = JpaUtils.getEntityManager();
-        try {
-            String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
-            TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
-            return new HashSet<EvaluationCriteria>(query.getResultList());
-        } catch (Exception e) {
-            logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all evaluation criteria: " + e.getMessage());
-        }
-    }
 
     public Set<Restaurant> searchByName(String search){
         return restaurantMapper.findByName(em, search);
@@ -126,57 +115,6 @@ public class RestaurantServices {
         tx.commit();
 
         return restaurant;
-    }
-
-
-    public BasicEvaluation createBasicEvaluation(Restaurant restaurant, Boolean like) {
-        String ipAddress;
-        try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
-        } catch (UnknownHostException ex) {
-            logger.error("Error - Couldn't retreive host IP address");
-            ipAddress = "Indisponible";
-        }
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-
-        BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);//ici je dois faire quelque chose pour la FK non ?
-
-        em.persist(eval);
-        tx.commit();
-
-        return eval; //basicEvaluationMapper.create(eval); à voir à nouveau si c'est tout bon comme ça ou pas ?
-    }
-
-    public CompleteEvaluation createCompleteEvaluation(Restaurant restaurant, String comment, String username) {
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-
-        CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        //eval = completeEvaluationMapper.create(eval);
-        restaurant.getEvaluations().add(eval); //ici je dois faire quelque chose pour la FK non ?
-
-        em.persist(eval);
-        tx.commit();
-
-        return eval;
-    }
-
-    public Grade createGrade(Integer note, CompleteEvaluation eval, EvaluationCriteria currentCriteria) {
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-
-        Grade grade = new Grade(note, eval, currentCriteria);
-        eval.getGrades().add(grade);//ici je dois faire quelque chose pour la FK non ?
-
-        em.persist(grade);
-        tx.commit();
-
-        return grade;
     }
 
     public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {

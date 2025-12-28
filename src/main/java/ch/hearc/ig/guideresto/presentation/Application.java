@@ -1,13 +1,8 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
-//import ch.hearc.ig.guideresto.persistence.FakeItems;
-import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.services.EvaluationServices;
 import ch.hearc.ig.guideresto.services.RestaurantServices;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +42,7 @@ public class Application {
 
         scanner.close();
         restaurantServices.shutdown(); // close the EntityManager
+        evaluationServices.shutdown(); // close the EntityManager
     }
 
     /**
@@ -389,7 +385,7 @@ public class Application {
 
         Grade grade; // L'utilisateur va saisir une note pour chaque critère existant.
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
-        for (EvaluationCriteria currentCriteria : restaurantServices.findAllEvaluationCriteria()) {
+        for (EvaluationCriteria currentCriteria : evaluationServices.findAllEvaluationCriteria()) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
             grade = new Grade(1, note, eval, currentCriteria);
