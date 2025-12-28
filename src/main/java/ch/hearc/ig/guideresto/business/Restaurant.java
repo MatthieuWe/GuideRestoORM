@@ -34,7 +34,9 @@ public class Restaurant implements IBusinessObject {
     @Column(name="site_web", length=100)
     private String website;
 
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // C'ets mieux avec des cascades, mais on a plein de mappers à utiliser pour le plaisir.
+    //@OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY)
     private Set<Evaluation> evaluations;
 
     @Embedded

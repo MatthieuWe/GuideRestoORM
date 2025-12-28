@@ -324,10 +324,12 @@ public class Application {
     private static void proceedRestaurantMenu(int choice, Restaurant restaurant) {
         switch (choice) {
             case 1:
-                addBasicEvaluation(restaurant, true);
+                evaluationServices.addBasicEvaluation(restaurant, true);
+                System.out.println("Votre vote a été pris en compte !");
                 break;
             case 2:
-                addBasicEvaluation(restaurant, false);
+                evaluationServices.addBasicEvaluation(restaurant, false);
+                System.out.println("Votre vote a été pris en compte !");
                 break;
             case 3:
                 evaluateRestaurant(restaurant);
@@ -349,26 +351,6 @@ public class Application {
     }
 
     /**
-     * Ajoute au restaurant passé en paramètre un like ou un dislike, en fonction du second paramètre.
-     * L'IP locale de l'utilisateur est enregistrée. S'il s'agissait d'une application web, il serait préférable de récupérer l'adresse IP publique de l'utilisateur.
-     *
-     * @param restaurant Le restaurant qui est évalué
-     * @param like       Est-ce un like ou un dislike ?
-     */
-    private static void addBasicEvaluation(Restaurant restaurant, Boolean like) {
-        String ipAddress;
-        try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
-        } catch (UnknownHostException ex) {
-            logger.error("Error - Couldn't retreive host IP address");
-            ipAddress = "Indisponible";
-        }
-        BasicEvaluation eval = new BasicEvaluation(1, new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);
-        System.out.println("Votre vote a été pris en compte !");
-    }
-
-    /**
      * Crée une évaluation complète pour le restaurant. L'utilisateur doit saisir toutes les informations (dont un commentaire et quelques notes)
      *
      * @param restaurant Le restaurant à évaluer
@@ -380,16 +362,14 @@ public class Application {
         System.out.println("Quel commentaire aimeriez-vous publier ?");
         String comment = readString();
 
-        CompleteEvaluation eval = new CompleteEvaluation(1, new Date(), restaurant, comment, username);
-        restaurant.getEvaluations().add(eval);
+        CompleteEvaluation eval = evaluationServices.addCompleteEvaluation(restaurant, comment, username);
 
-        Grade grade; // L'utilisateur va saisir une note pour chaque critère existant.
+        // L'utilisateur va saisir une note pour chaque critère existant.
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
         for (EvaluationCriteria currentCriteria : evaluationServices.findAllEvaluationCriteria()) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
-            grade = new Grade(1, note, eval, currentCriteria);
-            eval.getGrades().add(grade);
+            evaluationServices.createGrade(note, eval, currentCriteria);
         }
 
         System.out.println("Votre évaluation a bien été enregistrée, merci !");

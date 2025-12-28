@@ -52,7 +52,18 @@ public class EvaluationServices {
             throw new RuntimeException("Error while fetching all evaluation criteria: " + e.getMessage());
         }
     }
-    public BasicEvaluation createBasicEvaluation(Restaurant restaurant, Boolean like) {
+    /**
+     * Les trois méthodes ci-dessous servent à créer des notes et des evaluations. ce serait plus simple et propre de
+     * simplement faire confiance à Hibernate et son système de cascade, mais on aime les mappers.
+     */
+    /**
+     * Ajoute au restaurant passé en paramètre un like ou un dislike, en fonction du second paramètre.
+     * L'IP locale de l'utilisateur est enregistrée. S'il s'agissait d'une application web, il serait préférable de récupérer l'adresse IP publique de l'utilisateur.
+     *
+     * @param restaurant Le restaurant qui est évalué
+     * @param like       Est-ce un like ou un dislike ?
+     */
+    public void addBasicEvaluation(Restaurant restaurant, Boolean like) {
         String ipAddress;
         try {
             ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
@@ -69,17 +80,18 @@ public class EvaluationServices {
 
         em.persist(eval);
         tx.commit();
-
-        return eval; //basicEvaluationMapper.create(eval); à voir à nouveau si c'est tout bon comme ça ou pas ?
     }
 
-    public CompleteEvaluation createCompleteEvaluation(Restaurant restaurant, String comment, String username) {
+    /*
+    * TODO il faut trouver un moyen de regrouper cette méthode et tous appels à createGrade suivants dans une seule transaction
+    *  pt en envoyant tout en une fois depuis la couche de présentation, les notes dans un array... jsp - MW
+     */
+    public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String comment, String username) {
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
 
         CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        //eval = completeEvaluationMapper.create(eval);
         restaurant.getEvaluations().add(eval); //ici je dois faire quelque chose pour la FK non ?
 
         em.persist(eval);
@@ -95,7 +107,9 @@ public class EvaluationServices {
 
         Grade grade = new Grade(note, eval, currentCriteria);
         eval.getGrades().add(grade);//ici je dois faire quelque chose pour la FK non ?
-
+        // TODO ya un bug ici les notes sont pas persistés ou pas fkés correctement. oui, fkés.
+        // ou alors il y a un problème de récupération. si on ajoute une eval, on redémarre l'appli,
+        // on ne voit plus les notes dans le resto quand on l'affiche. -MW
         em.persist(grade);
         tx.commit();
 
