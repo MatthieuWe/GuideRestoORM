@@ -23,10 +23,13 @@ public class CityMapper extends AbstractMapper<City> {
     }
     
     public boolean delete(EntityManager em, City city) {
-       em.remove(city);
-       return true;
+        try {
+            em.remove(city);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
-    
     protected String getCountQuery() {
         return "SELECT Count(ci) FROM City ci";
     }

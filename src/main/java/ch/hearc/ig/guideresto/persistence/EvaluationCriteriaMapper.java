@@ -28,8 +28,12 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public boolean delete(EntityManager em, EvaluationCriteria evaluationCriteria) {
-        em.remove(evaluationCriteria);
-        return true;
+        try {
+            em.remove(evaluationCriteria);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override

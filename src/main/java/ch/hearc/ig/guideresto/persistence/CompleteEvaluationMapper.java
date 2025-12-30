@@ -33,8 +33,12 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public boolean delete(EntityManager em, CompleteEvaluation completeEvaluation) {
-        em.remove(completeEvaluation);
-        return true;
+        try {
+            em.remove(completeEvaluation);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
