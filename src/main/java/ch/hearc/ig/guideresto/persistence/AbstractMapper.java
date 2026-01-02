@@ -17,12 +17,11 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
     public abstract Set<T> findAll(EntityManager em);
     public abstract boolean delete(EntityManager em, T object);
 
-    protected abstract String getCountQuery();
-
     /**
      * Compte le nombre d'objets en base de données.
      * @return
      */
+    /*
     public int count() {
         Connection connection = ConnectionUtils.getConnection();
 
@@ -38,4 +37,5 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
             return 0;
         }
     }
+    */
 }

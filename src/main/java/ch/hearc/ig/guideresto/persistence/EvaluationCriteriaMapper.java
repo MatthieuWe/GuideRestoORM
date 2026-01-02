@@ -35,9 +35,4 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             return false;
         }
     }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(ec) FROM EvaluationCriteria ec";
-    }
 }

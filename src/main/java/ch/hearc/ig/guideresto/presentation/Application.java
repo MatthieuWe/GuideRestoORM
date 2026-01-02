@@ -1,11 +1,8 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
-//import ch.hearc.ig.guideresto.persistence.FakeItems;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import ch.hearc.ig.guideresto.services.EvaluationServices;
 import ch.hearc.ig.guideresto.services.RestaurantServices;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,11 +19,18 @@ public class Application {
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
     private static RestaurantServices restaurantServices;
+    private static EvaluationServices evaluationServices;
 
     public static void main(String[] args) {
 
         scanner = new Scanner(System.in);
         restaurantServices = new RestaurantServices();
+        evaluationServices = new EvaluationServices();
+
+        Set<Restaurant> restos = restaurantServices.searchByCity("Neuch");
+        for (Restaurant r : restos) {
+            System.out.println(restaurantServices.test(r));
+        }
 
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;
@@ -38,6 +42,7 @@ public class Application {
 
         scanner.close();
         restaurantServices.shutdown(); // close the EntityManager
+        evaluationServices.shutdown(); // close the EntityManager
     }
 
     /**
@@ -167,8 +172,6 @@ public class Application {
         String choice = readString();
 
         if (choice.equals("NEW")) {
-            City city = new City();
-            city.setId(1); // A modifier quand on a la connexion avec la BDD.
             System.out.println("Veuillez entrer le NPA de la nouvelle ville : ");
             String zipCode = readString();
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
@@ -253,8 +256,9 @@ public class Application {
         sb.append(restaurant.getWebsite()).append("\n");
         sb.append(restaurant.getAddress().getStreet()).append(", ");
         sb.append(restaurant.getAddress().getCity().getZipCode()).append(" ").append(restaurant.getAddress().getCity().getCityName()).append("\n");
-        sb.append("Nombre de likes : ").append(countLikes(restaurant.getEvaluations(), true)).append("\n");
-        sb.append("Nombre de dislikes : ").append(countLikes(restaurant.getEvaluations(), false)).append("\n");
+        // C'est l'occasion d'utiliser nos namedqueries pour compter en sql plutot que dans la couche de présentation
+        sb.append("Nombre de likes : ").append(evaluationServices.countLikes(restaurant, true)).append("\n");
+        sb.append("Nombre de dislikes : ").append(evaluationServices.countLikes(restaurant, false)).append("\n");
         sb.append("\nEvaluations reçues : ").append("\n");
 
         String text;
@@ -273,23 +277,6 @@ public class Application {
             choice = readInt();
             proceedRestaurantMenu(choice, restaurant);
         } while (choice != 0 && choice != 6); // 6 car le restaurant est alors supprimé...
-    }
-
-    /**
-     * Parcourt la liste et compte le nombre d'évaluations basiques positives ou négatives en fonction du paramètre likeRestaurant
-     *
-     * @param evaluations    La liste des évaluations à parcourir
-     * @param likeRestaurant Veut-on le nombre d'évaluations positives ou négatives ?
-     * @return Le nombre d'évaluations positives ou négatives trouvées
-     */
-    private static int countLikes(Set<Evaluation> evaluations, Boolean likeRestaurant) {
-        int count = 0;
-        for (Evaluation currentEval : evaluations) {
-            if (currentEval instanceof BasicEvaluation && ((BasicEvaluation) currentEval).getLikeRestaurant() == likeRestaurant) {
-                count++;
-            }
-        }
-        return count;
     }
 
     /**
@@ -337,10 +324,12 @@ public class Application {
     private static void proceedRestaurantMenu(int choice, Restaurant restaurant) {
         switch (choice) {
             case 1:
-                addBasicEvaluation(restaurant, true);
+                evaluationServices.addBasicEvaluation(restaurant, true);
+                System.out.println("Votre vote a été pris en compte !");
                 break;
             case 2:
-                addBasicEvaluation(restaurant, false);
+                evaluationServices.addBasicEvaluation(restaurant, false);
+                System.out.println("Votre vote a été pris en compte !");
                 break;
             case 3:
                 evaluateRestaurant(restaurant);
@@ -362,26 +351,6 @@ public class Application {
     }
 
     /**
-     * Ajoute au restaurant passé en paramètre un like ou un dislike, en fonction du second paramètre.
-     * L'IP locale de l'utilisateur est enregistrée. S'il s'agissait d'une application web, il serait préférable de récupérer l'adresse IP publique de l'utilisateur.
-     *
-     * @param restaurant Le restaurant qui est évalué
-     * @param like       Est-ce un like ou un dislike ?
-     */
-    private static void addBasicEvaluation(Restaurant restaurant, Boolean like) {
-        String ipAddress;
-        try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
-        } catch (UnknownHostException ex) {
-            logger.error("Error - Couldn't retreive host IP address");
-            ipAddress = "Indisponible";
-        }
-        BasicEvaluation eval = new BasicEvaluation(1, new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);
-        System.out.println("Votre vote a été pris en compte !");
-    }
-
-    /**
      * Crée une évaluation complète pour le restaurant. L'utilisateur doit saisir toutes les informations (dont un commentaire et quelques notes)
      *
      * @param restaurant Le restaurant à évaluer
@@ -393,16 +362,14 @@ public class Application {
         System.out.println("Quel commentaire aimeriez-vous publier ?");
         String comment = readString();
 
-        CompleteEvaluation eval = new CompleteEvaluation(1, new Date(), restaurant, comment, username);
-        restaurant.getEvaluations().add(eval);
+        CompleteEvaluation eval = evaluationServices.addCompleteEvaluation(restaurant, comment, username);
 
-        Grade grade; // L'utilisateur va saisir une note pour chaque critère existant.
+        // L'utilisateur va saisir une note pour chaque critère existant.
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
-        for (EvaluationCriteria currentCriteria : restaurantServices.findAllEvaluationCriteria()) {
+        for (EvaluationCriteria currentCriteria : evaluationServices.findAllEvaluationCriteria()) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
-            grade = new Grade(1, note, eval, currentCriteria);
-            eval.getGrades().add(grade);
+            evaluationServices.createGrade(note, eval, currentCriteria);
         }
 
         System.out.println("Votre évaluation a bien été enregistrée, merci !");
@@ -466,9 +433,11 @@ public class Application {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equals("o") || choice.equals("O")) {
-            restaurantServices.findAllRestaurant().remove(restaurant);
+            // TODO gérer tout ca dans les services
+            restaurantServices.deleteRestaurant(restaurant);
             restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
             restaurant.getType().getRestaurants().remove(restaurant);
+
             System.out.println("Le restaurant a bien été supprimé !");
         }
     }

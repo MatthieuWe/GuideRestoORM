@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 /**
  * @author cedric.baudet
  */
+@NamedQuery(name="EvaluationCriteria.count", query="select count (ec) from EvaluationCriteria ec")
 @Entity
 @Table(name="CRITERES_EVALUATION")
 public class EvaluationCriteria implements IBusinessObject {

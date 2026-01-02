@@ -1,19 +1,24 @@
 package ch.hearc.ig.guideresto.business;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import ch.hearc.ig.guideresto.persistence.jpa.BooleanConverter;
+import jakarta.persistence.*;
 
 import java.util.Date;
 
 /**
  * @author cedric.baudet
  */
+@NamedQuery(name="BasicEvaluation.countAll", query="select count (be) from BasicEvaluation be")
+@NamedQuery(name="BasicEvaluation.countLikes", query="select count (be) from BasicEvaluation be" +
+        " where be.restaurant = :restaurant" +
+        " and be.likeRestaurant = :like")
+@NamedQuery(name="BasicEvaluation.findByRestaurant", query="SELECT be FROM BasicEvaluation be WHERE be.restaurant = :restaurant")
 @Entity
 @Table(name="likes")
 public class BasicEvaluation extends Evaluation {
 
     @Column(name="appreciation", nullable = false, length = 1)
+    @Convert(converter = BooleanConverter.class)
     private Boolean likeRestaurant;
     @Column(name = "adresse_ip", nullable = false, length = 100)
     private String ipAddress;

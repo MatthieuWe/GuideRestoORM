@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     public Set<Evaluation> findByRestaurant(EntityManager em, Restaurant resto) {
-        String jpqlQuery = "SELECT be FROM BasicEvaluation be WHERE be.restaurant = :restaurant";
-        TypedQuery<BasicEvaluation> query = em.createQuery(jpqlQuery, BasicEvaluation.class);
+        TypedQuery<BasicEvaluation> query = em.createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class);
         query.setParameter("restaurant", resto);
         Set<Evaluation> basicEvaluations = query.getResultStream()
                 .collect(Collectors.toSet());
@@ -31,6 +30,13 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return basicEvaluations;
     }
 
+    public Long countForRestaurant(EntityManager em, Restaurant resto, Boolean like) {
+        return (Long) em.createNamedQuery("BasicEvaluation.countLikes", Long.class)
+            .setParameter("restaurant", resto)
+            .setParameter("like", like)
+            .getSingleResult();
+    }
+
     @Override
     public boolean delete(EntityManager em, BasicEvaluation basicEvaluation) {
         try {
@@ -39,10 +45,5 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(be) FROM BasicEvaluation be";
     }
 }

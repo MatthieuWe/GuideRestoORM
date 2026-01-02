@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation> {
 
     public Set<Evaluation> findByRestaurant(EntityManager em, Restaurant resto) {
-        String jpqlQuery = "SELECT ce FROM CompleteEvaluation ce WHERE ce.restaurant = :restaurant";
-        TypedQuery<CompleteEvaluation> query = em.createQuery(jpqlQuery, CompleteEvaluation.class);
+        TypedQuery<CompleteEvaluation> query = em.createNamedQuery("CompleteEvaluation.findByRestaurant", CompleteEvaluation.class);
         query.setParameter("restaurant", resto);
         Set<Evaluation> completeEvaluations = query.getResultStream()
                 .collect(Collectors.toSet());
@@ -39,10 +38,5 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         } catch (Exception e) {
             return false;
         }
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT Count(ce) FROM CompleteEvaluation ce";
     }
 }
