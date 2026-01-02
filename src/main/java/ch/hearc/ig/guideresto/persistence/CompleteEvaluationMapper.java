@@ -1,5 +1,6 @@
 package ch.hearc.ig.guideresto.persistence;
 
+import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Evaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
@@ -39,4 +40,16 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             return false;
         }
     }
+    public boolean deleteByRestaurant(EntityManager em, Restaurant resto) {
+        try {
+            String jpqlQuery = "DELETE FROM CompleteEvaluation ce WHERE restaurant.id = :restaurantId";
+            em.createQuery(jpqlQuery, CompleteEvaluation.class)
+                    .setParameter("restaurantId", resto.getId())
+                    .executeUpdate();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

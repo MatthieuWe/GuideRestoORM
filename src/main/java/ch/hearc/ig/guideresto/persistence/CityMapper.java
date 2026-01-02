@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.City;
+import ch.hearc.ig.guideresto.business.Grade;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
@@ -20,7 +21,12 @@ public class CityMapper extends AbstractMapper<City> {
         cityQuery.setParameter("name", "%" + partialName.toLowerCase() + "%");
         return new HashSet<>(cityQuery.getResultList());
     }
-    
+    public void purgeCity(EntityManager em, City city) throws Exception {
+        em.createQuery("DELETE FROM City ci WHERE ci = :city" +
+                " AND (SELECT Count(*) FROM Restaurant r WHERE r.address.city = :city) = 0")
+                .setParameter("city", city)
+                .executeUpdate();
+    }
     public boolean delete(EntityManager em, City city) {
         try {
             em.remove(city);

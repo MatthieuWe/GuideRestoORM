@@ -38,4 +38,16 @@ public class GradeMapper extends AbstractMapper<Grade> {
             return false;
         }
     }
+    public boolean deleteByEvaluation(EntityManager em, CompleteEvaluation eval) {
+        try {
+            String jpqlQuery = "DELETE FROM Grade gr WHERE evaluation.id = :evaluationId";
+            em.createQuery(jpqlQuery, Grade.class)
+                    .setParameter("evaluationId", eval.getId())
+                    .executeUpdate();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

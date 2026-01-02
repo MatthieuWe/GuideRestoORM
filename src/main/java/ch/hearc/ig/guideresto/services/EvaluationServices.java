@@ -24,11 +24,13 @@ public class EvaluationServices {
     //mappers
     private BasicEvaluationMapper beMapper ;
     private CompleteEvaluationMapper ceMapper ;
+    private GradeMapper gMapper ;
 
     public EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
         ceMapper = new CompleteEvaluationMapper();
+        gMapper = new GradeMapper();
     }
 
     /**
@@ -81,7 +83,7 @@ public class EvaluationServices {
     }
 
     /*
-    * TODO utiliser la transaction plus élégante vue en cours
+    * TODO utiliser la transaction plus élégante vue en cours -> partout
      */
     public Boolean addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) {
 
@@ -106,6 +108,28 @@ public class EvaluationServices {
         return true;
     }
 
+    /*
+    * On ne gère pas les transactions dans cette méthode, elle est utile dans le cadre de l'effacement d'un resto
+    * complet -> on gère plus haut, tout est affacé sinon rien
+     */
+    public Boolean deleteByRestaurant(Restaurant restaurant) {
+        Boolean success = beMapper.deleteByRestaurant(em, restaurant);
+        if (!success) {
+            return false;
+        }
+        for(Evaluation eval : restaurant.getEvaluations()) {
+            if (eval instanceof CompleteEvaluation) {
+                success = gMapper.deleteByEvaluation(em, (CompleteEvaluation) eval);
+                if (!success) {
+                    return false;
+                }
+                // on pourrait mais c'est pas opti, je prefere une seule requete en bloc à la fin
+                // ceMapper.delete(em, (CompleteEvaluation) eval);
+            }
+        }
+        return ceMapper.deleteByRestaurant(em, restaurant);
+
+    }
     public void shutdown() {
         em.close();
     }

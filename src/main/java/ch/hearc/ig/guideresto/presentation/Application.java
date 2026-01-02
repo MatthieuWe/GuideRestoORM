@@ -437,12 +437,11 @@ public class Application {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equals("o") || choice.equals("O")) {
-            // TODO gérer tout ca dans les services
-            restaurantServices.deleteRestaurant(restaurant);
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
-            restaurant.getType().getRestaurants().remove(restaurant);
-
-            System.out.println("Le restaurant a bien été supprimé !");
+            if (restaurantServices.deleteRestaurant(restaurant)){
+                System.out.println("Le restaurant a bien été supprimé !");
+            } else {
+                System.out.println("Quelque chose s'est mal passé, impossible de supprimer le restaurant.");
+            }
         }
     }
 

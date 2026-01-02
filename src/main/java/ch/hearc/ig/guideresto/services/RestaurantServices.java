@@ -117,6 +117,7 @@ public class RestaurantServices {
         return restaurant;
     }
 
+    // TODO cette méthode devrait etre utilisée... et la fonction de mise a jour ne persiste rien -> bug
     public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {
         EntityTransaction tx = em.getTransaction();
         try{
@@ -146,18 +147,19 @@ public class RestaurantServices {
                 logger.warn("Restaurant with ID " + restaurant.getId() + " not found for deletion.");
                 return false;
             }
+            EvaluationServices evaluationServices = new EvaluationServices();
             tx.begin();
-            // TODO c'est pas mieux mais on peut utiliser un de nos mappers ici
-            for (Evaluation eval : new HashSet<>(restaurant.getEvaluations())) {
-                em.remove(eval);
-            }
+            evaluationServices.deleteByRestaurant(restaurant);
+            City city = restaurant.getAddress().getCity();
+            city.getRestaurants().remove(restaurant);
             em.remove(restaurant);
-            // TODO vérifier si la ville est encore utilisée et sinon l'effacer aussi
+            // TODO Ca marche pas... problème de références entre objets transients et persistants
+            //cityMapper.purgeCity(em, city);
             tx.commit();
             return true;
-
         } catch (Exception e) {
-            logger.error("Error while deleting associated evaluations: " + e.getMessage());
+            e.printStackTrace();
+            logger.error("Error while deleting restaurant: " + e.getMessage());
             tx.rollback();
             return false;
         }
