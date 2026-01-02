@@ -362,17 +362,21 @@ public class Application {
         System.out.println("Quel commentaire aimeriez-vous publier ?");
         String comment = readString();
 
-        CompleteEvaluation eval = evaluationServices.addCompleteEvaluation(restaurant, comment, username);
-
         // L'utilisateur va saisir une note pour chaque critère existant.
         System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
+        Map<EvaluationCriteria, Integer> grades = new HashMap<>();
         for (EvaluationCriteria currentCriteria : evaluationServices.findAllEvaluationCriteria()) {
             System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
             Integer note = readInt();
-            evaluationServices.createGrade(note, eval, currentCriteria);
+            grades.put(currentCriteria, note);
         }
+        // on crée tout en une fois, la couche de service gère la transaction (tout pass ou rien)
+        if(evaluationServices.addCompleteEvaluation(restaurant, comment, username, grades)){
+            System.out.println("Votre évaluation a bien été enregistrée, merci !");
 
-        System.out.println("Votre évaluation a bien été enregistrée, merci !");
+        } else {
+            System.out.println("Quelque chose s'est mal passé et votre évaluation n'a pas été enregistrée, veuillez réessayer s.v.p.");
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class EvaluationServices {
@@ -80,30 +81,31 @@ public class EvaluationServices {
     }
 
     /*
-    * TODO il faut trouver un moyen de regrouper cette méthode et tous appels à createGrade suivants dans une seule transaction
-    *  pt en envoyant tout en une fois depuis la couche de présentation, les notes dans un array... jsp - MW
+    * TODO utiliser la transaction plus élégante vue en cours
      */
-    public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String comment, String username) {
-        EntityTransaction tx = em.getTransaction();
+    public Boolean addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) {
 
-        tx.begin();
-        CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        em.persist(eval);
-        tx.commit();
+        try {
+            EntityTransaction tx = em.getTransaction();
 
-        return eval;
+            tx.begin();
+            CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
+            em.persist(eval);
+
+            // TODO est-ce qu'on a tous les critères existants en DB ni plus ni moins? - question de concurrence a voir plus tard ici
+            for (EvaluationCriteria ec : grades.keySet()) {
+                Integer note = grades.get(ec);
+                Grade grade = new Grade(note, eval, ec);
+                em.persist(grade);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            logger.error("Error while adding complete evaluation: " + e.getMessage());
+            return false;
+        }
+        return true;
     }
 
-    public Grade createGrade(Integer note, CompleteEvaluation eval, EvaluationCriteria currentCriteria) {
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-        Grade grade = new Grade(note, eval, currentCriteria);
-        em.persist(grade);
-        tx.commit();
-
-        return grade;
-    }
     public void shutdown() {
         em.close();
     }
