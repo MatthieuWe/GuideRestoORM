@@ -9,7 +9,8 @@ import jakarta.persistence.*;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-
+@NamedQuery(name="CompleteEvaluation.count", query="select count (ce) from CompleteEvaluation ce")
+@NamedQuery(name="CompleteEvaluation.findByRestaurant", query="SELECT ce FROM CompleteEvaluation ce WHERE ce.restaurant = :restaurant")
 @Entity
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {

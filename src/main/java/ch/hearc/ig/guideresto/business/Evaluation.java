@@ -26,7 +26,7 @@ public abstract class Evaluation implements IBusinessObject {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE,
             generator = "seq_eval")
-    @SequenceGenerator(name="seq_eval", sequenceName = "seq_evaluations",
+    @SequenceGenerator(name="seq_eval", sequenceName = "seq_eval",
             initialValue = 1, allocationSize = 1)
     @Column(name="numero", length=10)
     private Integer id;
