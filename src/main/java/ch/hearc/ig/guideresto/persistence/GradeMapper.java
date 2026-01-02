@@ -31,7 +31,11 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public boolean delete(EntityManager em, Grade grade) {
-        em.remove(grade);
-        return true;
+        try {
+            em.remove(grade);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

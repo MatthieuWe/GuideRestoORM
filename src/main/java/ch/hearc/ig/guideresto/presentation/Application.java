@@ -82,7 +82,7 @@ public class Application {
                 addNewRestaurant();
                 break;
             case 0:
-                System.out.println("Au revoir !");
+                sayGoodBye();
                 break;
             default:
                 System.out.println("Erreur : saisie incorrecte. Veuillez réessayer");
@@ -524,6 +524,24 @@ public class Application {
      */
     private static String readString() {
         return scanner.nextLine();
+    }
+
+    private static void sayGoodBye() {
+        System.out.println("                                 .       .");
+        System.out.println("                                / `.   .' \\");
+        System.out.println("                        .---.  <    > <    >  .---.");
+        System.out.println("                        |    \\  \\ - ~ ~ - /  /    |");
+        System.out.println("                         ~-..-~             ~-..-~");
+        System.out.println("Au revoir !         \\~~~\\.'                    `./~~~/");
+        System.out.println("  \\ |     .-~~^-.    \\__/                        \\__/");
+        System.out.println("   \\|   .'  O    \\     /               /       \\  \\");
+        System.out.println("       (_____,    `._.'               |         }  \\/~~~/");
+        System.out.println("        `----.          /       }     |        /    \\__/");
+        System.out.println("              `-.      |       /      |       /      `. ,~~|");
+        System.out.println("                  ~-.__|      /_ - ~ ^|      /- _      `..-'   f: f:");
+        System.out.println("                       |     /        |     /     ~-.     `-. _||_||_");
+        System.out.println("                       |_____|        |_____|         ~ - . _ _ _ _ _>");
+        System.out.println("                          credits: Stegosaurus by Michael John Wagoner");
     }
 
 }

@@ -74,10 +74,7 @@ public class EvaluationServices {
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
-
         BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        restaurant.getEvaluations().add(eval);//ici je dois faire quelque chose pour la FK non ?
-
         em.persist(eval);
         tx.commit();
     }
@@ -90,10 +87,7 @@ public class EvaluationServices {
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
-
         CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        restaurant.getEvaluations().add(eval); //ici je dois faire quelque chose pour la FK non ?
-
         em.persist(eval);
         tx.commit();
 
@@ -104,12 +98,7 @@ public class EvaluationServices {
         EntityTransaction tx = em.getTransaction();
 
         tx.begin();
-
         Grade grade = new Grade(note, eval, currentCriteria);
-        eval.getGrades().add(grade);//ici je dois faire quelque chose pour la FK non ?
-        // TODO ya un bug ici les notes sont pas persistés ou pas fkés correctement. oui, fkés.
-        // ou alors il y a un problème de récupération. si on ajoute une eval, on redémarre l'appli,
-        // on ne voit plus les notes dans le resto quand on l'affiche. -MW
         em.persist(grade);
         tx.commit();
 

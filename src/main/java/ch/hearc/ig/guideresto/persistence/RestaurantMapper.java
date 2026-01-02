@@ -67,8 +67,12 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean delete(EntityManager em, Restaurant resto) {
-        em.remove(resto);
-        // TODO fix this. it's stupid. merci Matthieu.
-        return true;
+        try {
+            em.remove(resto);
+            return true;
+        } catch (Exception e) {
+            // if the DELETE goes awry, hibernate will throw an exception
+            return false;
+        }
     }
 }
