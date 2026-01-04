@@ -110,7 +110,7 @@ public class EvaluationServices {
 
     /*
     * On ne gère pas les transactions dans cette méthode, elle est utile dans le cadre de l'effacement d'un resto
-    * complet -> on gère plus haut, tout est affacé sinon rien
+    * complet -> on gère plus haut, tout est effacé sinon rien
      */
     public Boolean deleteByRestaurant(Restaurant restaurant) {
         Boolean success = beMapper.deleteByRestaurant(em, restaurant);

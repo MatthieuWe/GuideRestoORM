@@ -21,11 +21,12 @@ public class CityMapper extends AbstractMapper<City> {
         cityQuery.setParameter("name", "%" + partialName.toLowerCase() + "%");
         return new HashSet<>(cityQuery.getResultList());
     }
-    public void purgeCity(EntityManager em, City city) throws Exception {
-        em.createQuery("DELETE FROM City ci WHERE ci = :city" +
-                " AND (SELECT Count(*) FROM Restaurant r WHERE r.address.city = :city) = 0")
+    public boolean purgeCity(EntityManager em, City city) throws Exception {
+        int deletedCount = em.createQuery("DELETE FROM City ci WHERE ci = :city" +
+                " AND NOT EXISTS (SELECT r FROM Restaurant r WHERE r.address.city = :city)")
                 .setParameter("city", city)
                 .executeUpdate();
+        return deletedCount > 0;
     }
     public boolean delete(EntityManager em, City city) {
         try {

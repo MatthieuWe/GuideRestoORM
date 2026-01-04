@@ -49,11 +49,12 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public boolean deleteByRestaurant(EntityManager em, Restaurant resto) {
         try {
             String jpqlQuery = "DELETE FROM BasicEvaluation be WHERE restaurant.id = :restaurantId";
-            em.createQuery(jpqlQuery, BasicEvaluation.class)
+            em.createQuery(jpqlQuery)
                     .setParameter("restaurantId", resto.getId())
                     .executeUpdate();
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }

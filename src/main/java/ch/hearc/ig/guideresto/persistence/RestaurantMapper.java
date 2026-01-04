@@ -67,9 +67,12 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean delete(EntityManager em, Restaurant resto) {
+        // TODO Appliquer cette méthode d'effacement partout sinon elle est inutile...
         try {
-            em.remove(resto);
-            return true;
+            int deletedCount = em.createQuery("DELETE FROM Restaurant r WHERE r = :resto")
+                    .setParameter("resto", resto)
+                    .executeUpdate();
+            return deletedCount > 0;
         } catch (Exception e) {
             // if the DELETE goes awry, hibernate will throw an exception
             return false;

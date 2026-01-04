@@ -37,13 +37,14 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             em.remove(completeEvaluation);
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
     public boolean deleteByRestaurant(EntityManager em, Restaurant resto) {
         try {
             String jpqlQuery = "DELETE FROM CompleteEvaluation ce WHERE restaurant.id = :restaurantId";
-            em.createQuery(jpqlQuery, CompleteEvaluation.class)
+            em.createQuery(jpqlQuery)
                     .setParameter("restaurantId", resto.getId())
                     .executeUpdate();
             return true;

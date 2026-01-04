@@ -149,12 +149,18 @@ public class RestaurantServices {
             }
             EvaluationServices evaluationServices = new EvaluationServices();
             tx.begin();
-            evaluationServices.deleteByRestaurant(restaurant);
+            if (!evaluationServices.deleteByRestaurant(restaurant)){
+                return false;
+            }
             City city = restaurant.getAddress().getCity();
             city.getRestaurants().remove(restaurant);
-            em.remove(restaurant);
-            // TODO Ca marche pas... problème de références entre objets transients et persistants
-            //cityMapper.purgeCity(em, city);
+            // em.remove(restaurant);
+            /* Nope. on mélange du remove avec des DELETE, alors que remove execute le delete que avant lors du commit
+            * Ca casse tout l'ordre de la transaction et quand on veut purger la ville, il se chie dessus.
+            * du coup on fait tout en delete:
+            */
+            restaurantMapper.delete(em, restaurant);
+            cityMapper.purgeCity(em, city);
             tx.commit();
             return true;
         } catch (Exception e) {
