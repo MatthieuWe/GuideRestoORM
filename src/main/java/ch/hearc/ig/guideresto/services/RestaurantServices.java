@@ -139,6 +139,14 @@ public class RestaurantServices {
         }
     }
 
+    /*
+    * Efface un restaurant de la DB avec tous ses objets dépendants (evaluations) ainsi que la ville si elle
+    * n'est pas utilisée par un autre restaurant
+    * NOTE : cette méthod est une usine à gaz qui s'appuie sur plein d'autres méthodes dans les mappers
+    * et même l'autre classe de service pour les évaluations. En terme de performance je sais pas, mais
+    * ce qui est sûr c'est qu'on pourrait faire un code beaucoup plus simple en utilisant ON DELETE CASCADE
+    * dans le mapping des classes.
+     */
     public boolean deleteRestaurant(Restaurant restaurant){
         EntityTransaction tx = em.getTransaction();
         try {
@@ -155,7 +163,7 @@ public class RestaurantServices {
             City city = restaurant.getAddress().getCity();
             city.getRestaurants().remove(restaurant);
             // em.remove(restaurant);
-            /* Nope. on mélange du remove avec des DELETE, alors que remove execute le delete que avant lors du commit
+            /* Nope. on mélange du remove avec des DELETE, alors que remove execute le delete que lors du commit
             * Ca casse tout l'ordre de la transaction et quand on veut purger la ville, il se chie dessus.
             * du coup on fait tout en delete:
             */
