@@ -117,7 +117,6 @@ public class RestaurantServices {
         return restaurant;
     }
 
-    // TODO cette méthode devrait etre utilisée... et la fonction de mise a jour ne persiste rien -> bug
     public void updateRestaurant(Restaurant restaurant, String newAdress, City newCity) {
         EntityTransaction tx = em.getTransaction();
         try{
@@ -129,7 +128,6 @@ public class RestaurantServices {
             tx.begin();
             em.detach(restaurant);
             restaurant.setAddress(new Localisation (newAdress, newCity));
-            //est-ce que l'ancienne localisation doit être supprimée ?
             em.merge(restaurant);
 
             tx.commit();
@@ -207,14 +205,4 @@ public class RestaurantServices {
     public void shutdown() {
         em.close();
     }
-
-    public String test(Restaurant r) {
-        Set<Evaluation> be = new BasicEvaluationMapper().findByRestaurant(em, r);
-        StringBuilder sb = new StringBuilder();
-        for (Evaluation eval : be) {
-            sb.append(eval.toString());
-        }
-        return sb.toString();
-    }
-
 }

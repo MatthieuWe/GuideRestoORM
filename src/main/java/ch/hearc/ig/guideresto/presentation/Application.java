@@ -27,11 +27,6 @@ public class Application {
         restaurantServices = new RestaurantServices();
         evaluationServices = new EvaluationServices();
 
-        Set<Restaurant> restos = restaurantServices.searchByCity("Neuch");
-        for (Restaurant r : restos) {
-            System.out.println(restaurantServices.test(r));
-        }
-
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;
         do {
