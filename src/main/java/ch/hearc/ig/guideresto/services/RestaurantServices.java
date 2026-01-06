@@ -118,7 +118,7 @@ public class RestaurantServices {
     }
 
     // TODO cette méthode devrait etre utilisée... et la fonction de mise a jour ne persiste rien -> bug
-    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {
+    public void updateRestaurant(Restaurant restaurant, String newAdress, City newCity) {
         EntityTransaction tx = em.getTransaction();
         try{
             restaurant = em.find(Restaurant.class, restaurant.getId());
@@ -127,9 +127,9 @@ public class RestaurantServices {
                 return;
             }
             tx.begin();
-            em.detach(restaurant); // why ??
-            restaurant.setType(newType);
-            restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
+            em.detach(restaurant);
+            restaurant.setAddress(new Localisation (newAdress, newCity));
+            //est-ce que l'ancienne localisation doit être supprimée ?
             em.merge(restaurant);
 
             tx.commit();
@@ -138,6 +138,31 @@ public class RestaurantServices {
             tx.rollback();
         }
     }
+
+    public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) {
+        EntityTransaction tx = em.getTransaction();
+        try{
+            restaurant = em.find(Restaurant.class, restaurant.getId());
+            if (restaurant == null) {
+                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
+                return;
+            }
+            tx.begin();
+            em.detach(restaurant);
+            restaurant.setName(newName);
+            restaurant.setDescription(newDescription);
+            restaurant.setWebsite(newWebsite);
+            restaurant.setType(newType);
+            em.merge(restaurant);
+
+            tx.commit();
+        } catch (Exception e) {
+            logger.error("Error while updating restaurant: " + e.getMessage());
+            tx.rollback();
+        }
+    }
+
+
 
     /*
     * Efface un restaurant de la DB avec tous ses objets dépendants (evaluations) ainsi que la ville si elle

@@ -389,20 +389,15 @@ public class Application {
         System.out.println("Edition d'un restaurant !");
 
         System.out.println("Nouveau nom : ");
-        restaurant.setName(readString());
+        String newName = readString();
         System.out.println("Nouvelle description : ");
-        restaurant.setDescription(readString());
+        String newDescript = readString();
         System.out.println("Nouveau site web : ");
-        restaurant.setWebsite(readString());
+        String newWebSite = readString();
         System.out.println("Nouveau type de restaurant : ");
-
         RestaurantType newType = pickRestaurantType(restaurantServices.findAllRestaurantType());
-        if (newType != null && newType != restaurant.getType()) {
-            restaurant.getType().getRestaurants().remove(restaurant); // Il faut d'abord supprimer notre restaurant puisque le type va peut-être changer
-            restaurant.setType(newType);
-            newType.getRestaurants().add(restaurant);
-        }
 
+        restaurantServices.updateRestaurant(restaurant, newName, newDescript, newWebSite, newType);
         System.out.println("Merci, le restaurant a bien été modifié !");
     }
 
@@ -416,14 +411,10 @@ public class Application {
         System.out.println("Edition de l'adresse d'un restaurant !");
 
         System.out.println("Nouvelle rue : ");
-        restaurant.getAddress().setStreet(readString());
-
+        String newAdress = readString();
         City newCity = pickCity(restaurantServices.findAllCities());
-        if (newCity != null && newCity != restaurant.getAddress().getCity()) {
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant); // On supprime l'adresse de la ville
-            restaurant.getAddress().setCity(newCity);
-            newCity.getRestaurants().add(restaurant);
-        }
+
+        restaurantServices.updateRestaurant(restaurant, newAdress, newCity);
 
         System.out.println("L'adresse a bien été modifiée ! Merci !");
     }
