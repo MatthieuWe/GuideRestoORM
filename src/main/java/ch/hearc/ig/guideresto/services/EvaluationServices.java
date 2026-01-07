@@ -74,12 +74,10 @@ public class EvaluationServices {
             logger.error("Error - Couldn't retreive host IP address");
             ipAddress = "Indisponible";
         }
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
         BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        em.persist(eval);
-        tx.commit();
+        JpaUtils.inTransaction(em -> {
+            em.persist(eval);
+        });
     }
 
     public Boolean addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) {

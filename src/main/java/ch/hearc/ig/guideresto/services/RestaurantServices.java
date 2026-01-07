@@ -92,71 +92,59 @@ public class RestaurantServices {
     }
 
     public City createCity(String zipCode, String cityName) {
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
         City city = new City(zipCode, cityName);
         em.persist(city);
-        tx.commit();
-        return city; //à tester la persistance
+        return city;
     }
 
 
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
         Restaurant restaurant = new Restaurant();
         restaurant.setName(name);
         restaurant.setDescription(description);
         restaurant.setWebsite(website);
         restaurant.setAddress(new Localisation(street, city));
         restaurant.setType(restaurantType);
-        em.persist(restaurant);
-        tx.commit();
+
+        JpaUtils.inTransaction(em-> {
+            em.persist(restaurant);
+        });
 
         return restaurant;
     }
 
-    public void updateRestaurant(Restaurant restaurant, String newAdress, City newCity) {
-        EntityTransaction tx = em.getTransaction();
+    public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) {
         try{
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
-                return;
+            if(em.contains(restaurant)) {
+                JpaUtils.inTransaction(em -> {
+                    em.detach(restaurant);
+                    restaurant.setAddress(new Localisation(newAddress, newCity));
+                    em.merge(restaurant);
+                });
+            } else {
+                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
             }
-            tx.begin();
-            em.detach(restaurant);
-            restaurant.setAddress(new Localisation (newAdress, newCity));
-            em.merge(restaurant);
-
-            tx.commit();
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
-            tx.rollback();
         }
     }
 
     public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) {
-        EntityTransaction tx = em.getTransaction();
         try{
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
-                return;
+            if(em.contains(restaurant)) {
+                JpaUtils.inTransaction(em -> {
+                    em.detach(restaurant);
+                    restaurant.setName(newName);
+                    restaurant.setDescription(newDescription);
+                    restaurant.setWebsite(newWebsite);
+                    restaurant.setType(newType);
+                    em.merge(restaurant);
+                });
+            } else {
+                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
             }
-            tx.begin();
-            em.detach(restaurant);
-            restaurant.setName(newName);
-            restaurant.setDescription(newDescription);
-            restaurant.setWebsite(newWebsite);
-            restaurant.setType(newType);
-            em.merge(restaurant);
-
-            tx.commit();
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
-            tx.rollback();
         }
     }
 
