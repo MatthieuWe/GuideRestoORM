@@ -153,39 +153,27 @@ public class RestaurantServices {
     /*
     * Efface un restaurant de la DB avec tous ses objets dépendants (evaluations) ainsi que la ville si elle
     * n'est pas utilisée par un autre restaurant
-    * NOTE : cette méthod est une usine à gaz qui s'appuie sur plein d'autres méthodes dans les mappers
-    * et même l'autre classe de service pour les évaluations. En terme de performance je sais pas, mais
-    * ce qui est sûr c'est qu'on pourrait faire un code beaucoup plus simple en utilisant ON DELETE CASCADE
-    * dans le mapping des classes.
+    * On efface les evaluations et les notes grâce au cascade delete défini dans le mapping des objets
      */
     public boolean deleteRestaurant(Restaurant restaurant){
-        EntityTransaction tx = em.getTransaction();
         try {
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for deletion.");
-                return false;
-            }
-            EvaluationServices evaluationServices = new EvaluationServices();
-            tx.begin();
-            if (!evaluationServices.deleteByRestaurant(restaurant)){
-                return false;
-            }
-            City city = restaurant.getAddress().getCity();
-            city.getRestaurants().remove(restaurant);
-            // em.remove(restaurant);
-            /* Nope. on mélange du remove avec des DELETE, alors que remove execute le delete que lors du commit
-            * Ca casse tout l'ordre de la transaction et quand on veut purger la ville, il se chie dessus.
-            * du coup on fait tout en delete:
-            */
-            restaurantMapper.delete(em, restaurant);
-            cityMapper.purgeCity(em, city);
-            tx.commit();
-            return true;
+           // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
+           // le type osef on le laisse car il n'y a pas de méthode pour en ajouter dans l'interface
+           // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
+           // TODO il y a encore un bug, si on essaie d'effacer un resto créé dans la meme session ça plante.
+           JpaUtils.inTransaction(em -> {
+              City city = restaurant.getAddress().getCity();
+              city.getRestaurants().remove(restaurant);
+              restaurant.getType().getRestaurants().remove(restaurant);
+              em.remove(restaurant);
+              if (city.getRestaurants().isEmpty()) {
+                 em.remove(city);
+              }
+           });
+           return true;
         } catch (Exception e) {
             e.printStackTrace();
             logger.error("Error while deleting restaurant: " + e.getMessage());
-            tx.rollback();
             return false;
         }
     }
