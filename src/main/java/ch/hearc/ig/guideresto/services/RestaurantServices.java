@@ -117,7 +117,7 @@ public class RestaurantServices {
         return restaurant;
     }
 
-    // TODO cette méthode devrait etre utilisée... et la fonction de mise a jour ne persiste rien -> bug
+    // faire doc
     public void updateRestaurant(Restaurant restaurant, String newAdress, City newCity) {
         EntityTransaction tx = em.getTransaction();
         try{

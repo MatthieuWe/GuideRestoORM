@@ -228,15 +228,16 @@ public class Application {
         String street = readString();
         City city = null;
         do
-        { // La sélection d'une ville est obligatoire, donc l'opération se répètera tant qu'aucune ville n'est sélectionnée.
-            city = pickCity(restaurantServices.findAllCities());
+        {
+            city = pickCity(restaurantServices.findAllCities()); //Sila : une seule transaction dans cette méthode , donc comment faire ?
         } while (city == null);
         RestaurantType restaurantType = null;
         do
-        { // La sélection d'un type est obligatoire, donc l'opération se répètera tant qu'aucun type n'est sélectionné.
+        {
             restaurantType = pickRestaurantType(restaurantServices.findAllRestaurantType());
         } while (restaurantType == null);
 
+        //ici on a une nouvelle transaction
         Restaurant restaurant = restaurantServices.createRestaurant(name, description, website, street, city, restaurantType);
 
         showRestaurant(restaurant);
