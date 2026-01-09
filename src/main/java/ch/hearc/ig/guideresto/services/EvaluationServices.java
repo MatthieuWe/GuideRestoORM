@@ -74,33 +74,27 @@ public class EvaluationServices {
             logger.error("Error - Couldn't retreive host IP address");
             ipAddress = "Indisponible";
         }
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
         BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        em.persist(eval);
-        tx.commit();
+        JpaUtils.inTransaction(em -> {
+            em.persist(eval);
+        });
     }
 
-    /*
-    * TODO utiliser la transaction plus élégante vue en cours -> partout
-     */
     public Boolean addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) {
-
         try {
-            EntityTransaction tx = em.getTransaction();
+            JpaUtils.inTransaction(em-> {
+                CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
+                em.persist(eval);
+                eval.setGrades(new HashSet<>());
 
-            tx.begin();
-            CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-            em.persist(eval);
-
-            // TODO est-ce qu'on a tous les critères existants en DB ni plus ni moins? - question de concurrence a voir plus tard ici
-            for (EvaluationCriteria ec : grades.keySet()) {
-                Integer note = grades.get(ec);
-                Grade grade = new Grade(note, eval, ec);
-                em.persist(grade);
-            }
-            tx.commit();
+                for (EvaluationCriteria ec : grades.keySet()) {
+                    Integer note = grades.get(ec);
+                    Grade grade = new Grade(note, eval, ec);
+                    em.persist(grade);
+                    eval.getGrades().add(grade);
+                }
+                restaurant.getEvaluations().add(eval);
+            });
         } catch (Exception e) {
             logger.error("Error while adding complete evaluation: " + e.getMessage());
             return false;

@@ -91,74 +91,72 @@ public class RestaurantServices {
         return restaurantMapper.findByType(em, type);
     }
 
+    /*
+    * Cette méthode crée une nouvelle ville en mémoire mais ne la persiste pas !
+    * Elle sera persisté dans une seule et même transaction lors de la création du restaurant,
+    * Si cette transaction échoue, on n'a pas besoin de cette nouvelle ville en mémoire.
+     */
     public City createCity(String zipCode, String cityName) {
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-        City city = new City(zipCode, cityName);
-        em.persist(city);
-        tx.commit();
-        return city; //à tester la persistance
+        return new City(zipCode, cityName);
     }
 
 
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
         Restaurant restaurant = new Restaurant();
-        restaurant.setName(name);
-        restaurant.setDescription(description);
-        restaurant.setWebsite(website);
-        restaurant.setAddress(new Localisation(street, city));
-        restaurant.setType(restaurantType);
-        em.persist(restaurant);
-        tx.commit();
+        try {
+            restaurant.setName(name);
+            restaurant.setDescription(description);
+            restaurant.setWebsite(website);
+            restaurant.setAddress(new Localisation(street, city));
+            restaurant.setType(restaurantType);
 
+            city.getRestaurants().add(restaurant);
+            restaurantType.getRestaurants().add(restaurant);
+
+            JpaUtils.inTransaction(em -> {
+                if (!em.contains(city)) { // la ville n'est pas encore persistée, créée par l'utilisateur pour ce nouveau resto
+                    em.persist(city);
+                }
+                em.persist(restaurant);
+            });
+        } catch (Exception e) {
+            logger.error("Error creating restaurant: " + e.getMessage());
+        }
         return restaurant;
     }
 
-    // faire doc
-    public void updateRestaurant(Restaurant restaurant, String newAdress, City newCity) {
-        EntityTransaction tx = em.getTransaction();
+    public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) {
         try{
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
-                return;
+            if(em.contains(restaurant)) {
+                JpaUtils.inTransaction(em -> {
+                    em.detach(restaurant);
+                    restaurant.setAddress(new Localisation(newAddress, newCity));
+                    em.merge(restaurant);
+                });
+            } else {
+                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
             }
-            tx.begin();
-            em.detach(restaurant);
-            restaurant.setAddress(new Localisation (newAdress, newCity));
-            //est-ce que l'ancienne localisation doit être supprimée ?
-            em.merge(restaurant);
-
-            tx.commit();
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
-            tx.rollback();
         }
     }
 
     public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) {
-        EntityTransaction tx = em.getTransaction();
         try{
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
-                return;
+            if(em.contains(restaurant)) {
+                JpaUtils.inTransaction(em -> {
+                    em.detach(restaurant);
+                    restaurant.setName(newName);
+                    restaurant.setDescription(newDescription);
+                    restaurant.setWebsite(newWebsite);
+                    restaurant.setType(newType);
+                    em.merge(restaurant);
+                });
+            } else {
+                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
             }
-            tx.begin();
-            em.detach(restaurant);
-            restaurant.setName(newName);
-            restaurant.setDescription(newDescription);
-            restaurant.setWebsite(newWebsite);
-            restaurant.setType(newType);
-            em.merge(restaurant);
-
-            tx.commit();
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
-            tx.rollback();
         }
     }
 
@@ -167,39 +165,27 @@ public class RestaurantServices {
     /*
     * Efface un restaurant de la DB avec tous ses objets dépendants (evaluations) ainsi que la ville si elle
     * n'est pas utilisée par un autre restaurant
-    * NOTE : cette méthod est une usine à gaz qui s'appuie sur plein d'autres méthodes dans les mappers
-    * et même l'autre classe de service pour les évaluations. En terme de performance je sais pas, mais
-    * ce qui est sûr c'est qu'on pourrait faire un code beaucoup plus simple en utilisant ON DELETE CASCADE
-    * dans le mapping des classes.
+    * On efface les evaluations et les notes grâce au cascade delete défini dans le mapping des objets
      */
     public boolean deleteRestaurant(Restaurant restaurant){
-        EntityTransaction tx = em.getTransaction();
         try {
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for deletion.");
-                return false;
-            }
-            EvaluationServices evaluationServices = new EvaluationServices();
-            tx.begin();
-            if (!evaluationServices.deleteByRestaurant(restaurant)){
-                return false;
-            }
-            City city = restaurant.getAddress().getCity();
-            city.getRestaurants().remove(restaurant);
-            // em.remove(restaurant);
-            /* Nope. on mélange du remove avec des DELETE, alors que remove execute le delete que lors du commit
-            * Ca casse tout l'ordre de la transaction et quand on veut purger la ville, il se chie dessus.
-            * du coup on fait tout en delete:
-            */
-            restaurantMapper.delete(em, restaurant);
-            cityMapper.purgeCity(em, city);
-            tx.commit();
-            return true;
+           // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
+           // le type osef on le laisse car il n'y a pas de méthode pour en ajouter dans l'interface
+           // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
+           // TODO il y a encore un bug, si on essaie d'effacer un resto créé dans la meme session ça plante.
+           JpaUtils.inTransaction(em -> {
+              City city = restaurant.getAddress().getCity();
+              city.getRestaurants().remove(restaurant);
+              restaurant.getType().getRestaurants().remove(restaurant);
+              em.remove(restaurant);
+              if (city.getRestaurants().isEmpty()) {
+                 em.remove(city);
+              }
+           });
+           return true;
         } catch (Exception e) {
             e.printStackTrace();
             logger.error("Error while deleting restaurant: " + e.getMessage());
-            tx.rollback();
             return false;
         }
     }
@@ -207,14 +193,4 @@ public class RestaurantServices {
     public void shutdown() {
         em.close();
     }
-
-    public String test(Restaurant r) {
-        Set<Evaluation> be = new BasicEvaluationMapper().findByRestaurant(em, r);
-        StringBuilder sb = new StringBuilder();
-        for (Evaluation eval : be) {
-            sb.append(eval.toString());
-        }
-        return sb.toString();
-    }
-
 }
