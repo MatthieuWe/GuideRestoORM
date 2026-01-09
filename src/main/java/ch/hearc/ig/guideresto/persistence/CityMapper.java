@@ -11,9 +11,14 @@ import java.util.Set;
 public class CityMapper extends AbstractMapper<City> {
 
     public Set<City> findAll(EntityManager em) {
-        String query =  "SELECT ci FROM City ci";
-        TypedQuery<City> cityQuery = em.createQuery(query, City.class);
-        return new HashSet<>(cityQuery.getResultList());
+        try {
+            String findAllCity = "SELECT c FROM City c";
+            TypedQuery<City> query = em.createQuery(findAllCity, City.class);
+            return new HashSet<City>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching all cities: " + e.getMessage());
+            throw new RuntimeException("Error while fetching all cities: " + e.getMessage());
+        }
     }
     
     public Set<City> findByName(EntityManager em, String partialName) {

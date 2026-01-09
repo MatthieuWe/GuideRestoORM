@@ -17,11 +17,16 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     public Set<RestaurantType> findAll(EntityManager em) {
-       String query = "SELECT ty FROM RestaurantType ty";
-       TypedQuery<RestaurantType> typeQuery = em.createQuery(query, RestaurantType.class);
-       return new HashSet<>(typeQuery.getResultList());
+        try {
+            String findAllRestaurantType = "SELECT t FROM RestaurantType t ";
+            TypedQuery<RestaurantType> query = em.createQuery(findAllRestaurantType, RestaurantType.class);
+            return new HashSet<RestaurantType>(query.getResultList());
+        } catch (Exception e) {
+            logger.error("Error while fetching all restaurant types: " + e.getMessage());
+            throw new RuntimeException("Error while fetching all restaurant types: " + e.getMessage());
+        }
     }
-    
+
     public boolean delete(EntityManager em, RestaurantType restaurantType) {
         try {
             em.remove(restaurantType);

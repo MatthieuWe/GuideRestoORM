@@ -41,9 +41,7 @@ public class RestaurantServices {
 
     public Set<RestaurantType> findAllRestaurantType() {
         try {
-            String findAllRestaurantType = "SELECT t FROM RestaurantType t ";
-            TypedQuery<RestaurantType> query = em.createQuery(findAllRestaurantType, RestaurantType.class);
-            return new HashSet<RestaurantType>(query.getResultList());
+            return typeMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all restaurant types: " + e.getMessage());
             throw new RuntimeException("Error while fetching all restaurant types: " + e.getMessage());
@@ -52,9 +50,7 @@ public class RestaurantServices {
 
     public Set<City> findAllCities(){
         try {
-            String findAllCity = "SELECT c FROM City c";
-            TypedQuery<City> query = em.createQuery(findAllCity, City.class);
-            return new HashSet<City>(query.getResultList());
+           return cityMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all cities: " + e.getMessage());
             throw new RuntimeException("Error while fetching all cities: " + e.getMessage());
