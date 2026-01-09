@@ -171,7 +171,7 @@ public class Application {
             String zipCode = readString();
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
             String cityName = readString();
-            return restaurantServices.createCity(zipCode, cityName); //ça retrourne un city donc ça doit être okay ... à tester
+            return restaurantServices.createCity(zipCode, cityName);
         }
 
         return searchCityByZipCode(cities, choice);
@@ -451,6 +451,10 @@ public class Application {
     /**
      * Recherche dans le Set la ville comportant le code NPA passé en paramètre.
      * Retourne null si la ville n'est pas trouvée
+     *     > Il y a un problème ici, le CP n'est pas unique (ni en vrai ni en DB) et cette fonction retourne
+     *     la première occurence trouvée. On ne traitera pas ce point dans ce projet car cela dépasse à mon sens
+     *     ce qui est demandé et demande des modifications dans toutes les couches y.c. le modèle de données. De plus,
+     *     je suppose que c'est une simplification volontaire. -MW
      *
      * @param cities  Set de villes
      * @param zipCode NPA de la ville à rechercher

@@ -91,10 +91,13 @@ public class RestaurantServices {
         return restaurantMapper.findByType(em, type);
     }
 
+    /*
+    * Cette méthode crée une nouvelle ville en mémoire mais ne la persiste pas !
+    * Elle sera persisté dans une seule et même transaction lors de la création du restaurant,
+    * Si cette transaction échoue, on n'a pas besoin de cette nouvelle ville en mémoire.
+     */
     public City createCity(String zipCode, String cityName) {
-        City city = new City(zipCode, cityName);
-        em.persist(city);
-        return city;
+        return new City(zipCode, cityName);
     }
 
 
@@ -107,6 +110,9 @@ public class RestaurantServices {
         restaurant.setType(restaurantType);
 
         JpaUtils.inTransaction(em-> {
+            if (!em.contains(city)) { // la ville n'est pas encore persistée, créée par l'utilisateur pour ce nouveau resto
+                em.persist(city);
+            }
             em.persist(restaurant);
         });
 
