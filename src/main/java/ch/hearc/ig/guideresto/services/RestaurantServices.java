@@ -103,19 +103,25 @@ public class RestaurantServices {
 
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
         Restaurant restaurant = new Restaurant();
-        restaurant.setName(name);
-        restaurant.setDescription(description);
-        restaurant.setWebsite(website);
-        restaurant.setAddress(new Localisation(street, city));
-        restaurant.setType(restaurantType);
+        try {
+            restaurant.setName(name);
+            restaurant.setDescription(description);
+            restaurant.setWebsite(website);
+            restaurant.setAddress(new Localisation(street, city));
+            restaurant.setType(restaurantType);
 
-        JpaUtils.inTransaction(em-> {
-            if (!em.contains(city)) { // la ville n'est pas encore persistée, créée par l'utilisateur pour ce nouveau resto
-                em.persist(city);
-            }
-            em.persist(restaurant);
-        });
+            city.getRestaurants().add(restaurant);
+            restaurantType.getRestaurants().add(restaurant);
 
+            JpaUtils.inTransaction(em -> {
+                if (!em.contains(city)) { // la ville n'est pas encore persistée, créée par l'utilisateur pour ce nouveau resto
+                    em.persist(city);
+                }
+                em.persist(restaurant);
+            });
+        } catch (Exception e) {
+            logger.error("Error creating restaurant: " + e.getMessage());
+        }
         return restaurant;
     }
 
