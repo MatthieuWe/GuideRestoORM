@@ -22,17 +22,14 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         Set<EvaluationCriteria> evaluationCriterias = em.createQuery(jpqlQuery, EvaluationCriteria.class)
                 .getResultStream()
                 .collect(Collectors.toSet());
-
         return evaluationCriterias;
     }
 
     @Override
     public boolean delete(EntityManager em, EvaluationCriteria evaluationCriteria) {
-        try {
-            em.remove(evaluationCriteria);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        int deletedCount = em.createQuery("DELETE FROM EvaluationCriteria ec WHERE ec = :evaluationCriteria")
+                .setParameter("evaluationCriteria", evaluationCriteria)
+                .executeUpdate();
+        return deletedCount > 0;
     }
 }

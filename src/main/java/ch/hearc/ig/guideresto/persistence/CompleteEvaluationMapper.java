@@ -1,6 +1,5 @@
 package ch.hearc.ig.guideresto.persistence;
 
-import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Evaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
@@ -17,7 +16,6 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         query.setParameter("restaurant", resto);
         Set<Evaluation> completeEvaluations = query.getResultStream()
                 .collect(Collectors.toSet());
-
         return completeEvaluations;
     }
 
@@ -27,30 +25,22 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         Set<CompleteEvaluation> completeEvaluations = em.createQuery(jpqlQuery, CompleteEvaluation.class)
                 .getResultStream()
                 .collect(Collectors.toSet());
-
         return completeEvaluations;
     }
 
     @Override
     public boolean delete(EntityManager em, CompleteEvaluation completeEvaluation) {
-        try {
-            em.remove(completeEvaluation);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        int deletedCount = em.createQuery("DELETE FROM CompleteEvaluation ce WHERE ce = :completeEvaluation")
+                .setParameter("completeEvaluation", completeEvaluation)
+                .executeUpdate();
+        return deletedCount > 0;
     }
-    public boolean deleteByRestaurant(EntityManager em, Restaurant resto) {
-        try {
-            String jpqlQuery = "DELETE FROM CompleteEvaluation ce WHERE restaurant.id = :restaurantId";
-            em.createQuery(jpqlQuery)
-                    .setParameter("restaurantId", resto.getId())
-                    .executeUpdate();
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    public int deleteByRestaurant(EntityManager em, Restaurant resto) {
+        String jpqlQuery = "DELETE FROM CompleteEvaluation ce WHERE restaurant.id = :restaurantId";
+        int deletedCount = em.createQuery(jpqlQuery)
+                .setParameter("restaurantId", resto.getId())
+                .executeUpdate();
+        return deletedCount;
     }
 
 }
