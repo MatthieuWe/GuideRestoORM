@@ -10,6 +10,7 @@ import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.NoResultException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -165,14 +166,18 @@ public class RestaurantServices {
                 Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
                 managedRestaurant.setAddress(new Localisation(newAddress, newCity));
             });
-        } catch (Exception e) {
+        } 
+      } catch (OptimisticLockException e) {
+            logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
+            throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
+    } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
         }
     }
 
     public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) throws Exception {
-        try{
+        try {
             JpaUtils.inTransaction(em -> {
                 Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
                 managedRestaurant.setName(newName);
@@ -180,10 +185,13 @@ public class RestaurantServices {
                 managedRestaurant.setWebsite(newWebsite);
                 managedRestaurant.setType(newType);
             });
-        } catch (Exception e) {
+        } catch (OptimisticLockException e) {
+            logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
+            //tx.rollback();
+            throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
+        }catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
-
         }
     }
 
@@ -209,6 +217,10 @@ public class RestaurantServices {
                }
            });
            return true;
+        } catch (OptimisticLockException e) {
+            logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
+            //tx.rollback();
+            throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
         } catch (Exception e) {
             e.printStackTrace();
             logger.error("Error while deleting restaurant: " + e.getMessage());
