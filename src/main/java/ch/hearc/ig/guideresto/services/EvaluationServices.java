@@ -40,18 +40,23 @@ public class EvaluationServices {
      * @param likeRestaurant Veut-on le nombre d'évaluations positives ou négatives ?
      * @return Le nombre d'évaluations positives ou négatives trouvées
      */
-    public Long countLikes(Restaurant resto, Boolean likeRestaurant) {
-        return beMapper.countForRestaurant(em, resto, likeRestaurant);
+    public Long countLikes(Restaurant resto, Boolean likeRestaurant) throws Exception {
+        try {
+            return beMapper.countForRestaurant(em, resto, likeRestaurant);
+        }catch (Exception e) {
+            logger.error("Error while counting likes : " + e.getMessage());
+            throw new Exception("Erreur lors du comptage des likes, veuillez réessayer plus tard.");
+        }
     }
 
-    public Set<EvaluationCriteria> findAllEvaluationCriteria() {
+    public Set<EvaluationCriteria> findAllEvaluationCriteria() throws Exception {
         try {
             String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
             TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
             return new HashSet<EvaluationCriteria>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all evaluation criteria: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des évaluations, veuillez réessayer plus tard.");
         }
     }
     /**
@@ -65,21 +70,30 @@ public class EvaluationServices {
      * @param restaurant Le restaurant qui est évalué
      * @param like       Est-ce un like ou un dislike ?
      */
-    public void addBasicEvaluation(Restaurant restaurant, Boolean like) {
-        String ipAddress;
+    public void addBasicEvaluation(Restaurant restaurant, Boolean like) throws Exception {
         try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
-        } catch (UnknownHostException ex) {
-            logger.error("Error - Couldn't retreive host IP address");
-            ipAddress = "Indisponible";
+            String ipAddress;
+            try {
+                ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
+            } catch (UnknownHostException ex) {
+                logger.error("Error - Couldn't retreive host IP address");
+                ipAddress = "Indisponible";
+            }
+            BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
+            JpaUtils.inTransaction(em -> {
+                em.persist(eval);
+            });
+        } catch (Exception e) {
+            logger.error("Error while adding evaluation : " + e.getMessage());
+            throw new Exception("Erreur lors de l'ajout de l'évaluation, veuillez réessayer plus tard.");
         }
-        BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        JpaUtils.inTransaction(em -> {
-            em.persist(eval);
-        });
     }
 
-    public Boolean addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) {
+    /*
+    * Ajoute et persiste une évaluation complète a un restaurant
+    * parametre "grades" : fournir une Map avec le critère comme clé et la note comme valeur
+     */
+    public void addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) throws Exception {
         try {
             JpaUtils.inTransaction(em-> {
                 CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
@@ -96,9 +110,8 @@ public class EvaluationServices {
             });
         } catch (Exception e) {
             logger.error("Error while adding complete evaluation: " + e.getMessage());
-            return false;
+            throw new Exception("Erreur lors de l'ajout de l'évaluation, veuillez réessayer plus tard.");
         }
-        return true;
     }
 
     /*

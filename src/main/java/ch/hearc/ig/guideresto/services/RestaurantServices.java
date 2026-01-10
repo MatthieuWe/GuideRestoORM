@@ -35,32 +35,40 @@ public class RestaurantServices {
         typeMapper = new RestaurantTypeMapper();
     }
 
-    public Set<Restaurant> findAllRestaurant() {
-        return restaurantMapper.findAll(em);
+    public Set<Restaurant> findAllRestaurant() throws Exception {
+        try {
+            return restaurantMapper.findAll(em);
+        } catch (Exception e) {
+            logger.error("Error while fetching all restaurants: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des restaurants, veuillez réessayer plus tard.");
+        }
     }
 
-    public Set<RestaurantType> findAllRestaurantType() {
+    public Set<RestaurantType> findAllRestaurantType() throws Exception {
         try {
             return typeMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all restaurant types: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all restaurant types: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des types, veuillez réessayer plus tard.");
         }
     }
 
-    public Set<City> findAllCities(){
+    public Set<City> findAllCities() throws Exception {
         try {
            return cityMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all cities: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all cities: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des villes, veuillez réessayer plus tard.");
         }
-
-
     }
 
-    public Set<Restaurant> searchByName(String search){
-        return restaurantMapper.findByName(em, search);
+    public Set<Restaurant> searchByName(String search) throws Exception {
+        try {
+            return restaurantMapper.findByName(em, search);
+        } catch (Exception e) {
+            logger.error("Error while searching restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
+        }
     }
     /*
     Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
@@ -70,21 +78,31 @@ public class RestaurantServices {
     Solution B -  c'est plus efficace d'adapter notre méthode findByCity Dans le restaurantMapper pour qu'elle fasse
     tout ça directement en JPQL avec une jointure. Boucler sur un resultset pour refaire des select, c'est pas beau.
      */
-    public Set<Restaurant> searchByCity(String search){
-        // Solution A
-        Set<City> cities = cityMapper.findByName(em, search);
-        Set<Restaurant> restos = new HashSet<>();
-        for (City city : cities) {
-            restos.addAll(restaurantMapper.findByCity(em, city));
+    public Set<Restaurant> searchByCity(String search) throws Exception {
+        try {
+            // Solution A
+            Set<City> cities = cityMapper.findByName(em, search);
+            Set<Restaurant> restos = new HashSet<>();
+            for (City city : cities) {
+                restos.addAll(restaurantMapper.findByCity(em, city));
+            }
+            return restos;
+            // Solution B - meilleur
+            /*
+            return restaurantMapper.findByCityName(em, search);
+            */
+        } catch (Exception e) {
+            logger.error("Error while searching restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
         }
-        return restos;
-        // Solution B - meilleur
-        /*
-        return restaurantMapper.findByCityName(em, search);
-        */
     }
-    public Set<Restaurant> searchByType(RestaurantType type){
-        return restaurantMapper.findByType(em, type);
+    public Set<Restaurant> searchByType(RestaurantType type) throws Exception{
+        try{
+            return restaurantMapper.findByType(em, type);
+        } catch (Exception e) {
+            logger.error("Error while searching restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
+        }
     }
 
     /*
@@ -92,12 +110,17 @@ public class RestaurantServices {
     * Elle sera persisté dans une seule et même transaction lors de la création du restaurant,
     * Si cette transaction échoue, on n'a pas besoin de cette nouvelle ville dans la DB
      */
-    public City createCity(String zipCode, String cityName) {
-        return new City(zipCode, cityName);
+    public City createCity(String zipCode, String cityName) throws Exception {
+        try {
+            return new City(zipCode, cityName);
+        }catch (Exception e){
+            logger.error("Error while creating city: " + e.getMessage());
+            throw new Exception("Erreur lors de la creation de la ville, veuillez réessayer plus tard.");
+        }
     }
 
 
-    public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
+    public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) throws Exception {
         Restaurant restaurant = new Restaurant();
         try {
             restaurant.setName(name);
@@ -115,13 +138,14 @@ public class RestaurantServices {
                 }
                 em.persist(restaurant);
             });
+            return restaurant;
         } catch (Exception e) {
             logger.error("Error creating restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la creation du restaurant, veuillez réessayer plus tard.");
         }
-        return restaurant;
     }
 
-    public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) {
+    public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) throws Exception{
         try{
             if(em.contains(restaurant)) {
                 JpaUtils.inTransaction(em -> {
@@ -134,10 +158,11 @@ public class RestaurantServices {
             }
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
         }
     }
 
-    public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) {
+    public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) throws Exception {
         try{
             JpaUtils.inTransaction(em -> {
                 restaurant.setName(newName);
@@ -147,6 +172,8 @@ public class RestaurantServices {
             });
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
+
         }
     }
 
@@ -155,7 +182,7 @@ public class RestaurantServices {
     * n'est pas utilisée par un autre restaurant
     * On efface les evaluations et les notes grâce au cascade delete défini dans le mapping des objets
      */
-    public boolean deleteRestaurant(Restaurant restaurant){
+    public boolean deleteRestaurant(Restaurant restaurant) throws Exception {
         try {
            // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
            // le type osef on le laisse car il n'y a pas de méthode pour en ajouter dans l'interface
@@ -174,7 +201,7 @@ public class RestaurantServices {
         } catch (Exception e) {
             e.printStackTrace();
             logger.error("Error while deleting restaurant: " + e.getMessage());
-            return false;
+            throw new Exception("Erreur lors de l'effacement du restaurant, veuillez réessayer plus tard.");
         }
     }
 

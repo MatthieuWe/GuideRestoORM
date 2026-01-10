@@ -116,10 +116,13 @@ public class Application {
      */
     private static void showRestaurantsList() {
         System.out.println("Liste des restaurants : ");
-        Restaurant restaurant = pickRestaurant(restaurantServices.findAllRestaurant());
-
-        if (restaurant != null) { // Si l'utilisateur a choisi un restaurant, on l'affiche, sinon on ne fait rien et l'application va réafficher le menu principal
-            showRestaurant(restaurant);
+        try {
+            Restaurant restaurant = pickRestaurant(restaurantServices.findAllRestaurant());
+            if (restaurant != null) { // Si l'utilisateur a choisi un restaurant, on l'affiche, sinon on ne fait rien et l'application va réafficher le menu principal
+                showRestaurant(restaurant);
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -129,11 +132,14 @@ public class Application {
     private static void searchRestaurantByName() {
         System.out.println("Veuillez entrer une partie du nom recherché : ");
         String research = readString();
-
-        Set<Restaurant> filteredList = restaurantServices.searchByName(research);
-        Restaurant restaurant = pickRestaurant(filteredList);
-        if (restaurant != null) {
-            showRestaurant(restaurant);
+        try {
+            Set<Restaurant> filteredList = restaurantServices.searchByName(research);
+            Restaurant restaurant = pickRestaurant(filteredList);
+            if (restaurant != null) {
+                showRestaurant(restaurant);
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -143,11 +149,14 @@ public class Application {
     private static void searchRestaurantByCity() {
         System.out.println("Veuillez entrer une partie du nom de la ville désirée : ");
         String research = readString();
-
-        Set<Restaurant> filteredList = restaurantServices.searchByCity(research);
-        Restaurant restaurant = pickRestaurant(filteredList);
-        if (restaurant != null) {
-            showRestaurant(restaurant);
+        try {
+            Set<Restaurant> filteredList = restaurantServices.searchByCity(research);
+            Restaurant restaurant = pickRestaurant(filteredList);
+            if (restaurant != null) {
+                showRestaurant(restaurant);
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -157,7 +166,7 @@ public class Application {
      * @param cities La liste des villes à présnter à l'utilisateur
      * @return La ville sélectionnée, ou null si aucune ville n'a été choisie.
      */
-    private static City pickCity(Set<City> cities) {
+    private static City pickCity(Set<City> cities) throws Exception {
         System.out.println("Voici la liste des villes possibles, veuillez entrer le NPA de la ville désirée : ");
 
         for (City currentCity : cities) {
@@ -171,7 +180,7 @@ public class Application {
             String zipCode = readString();
             System.out.println("Veuillez entrer le nom de la nouvelle ville : ");
             String cityName = readString();
-            return restaurantServices.createCity(zipCode, cityName);
+            return restaurantServices.createCity(zipCode, cityName); // on ne traite pas l'exception dans cette méthode mais au niveau supérieur
         }
 
         return searchCityByZipCode(cities, choice);
@@ -198,13 +207,15 @@ public class Application {
      * Si l'utilisateur sélectionne un restaurant, ce dernier lui sera affiché.
      */
     private static void searchRestaurantByType() {
-        RestaurantType chosenType = pickRestaurantType(restaurantServices.findAllRestaurantType());
+        try {
+            RestaurantType chosenType = pickRestaurantType(restaurantServices.findAllRestaurantType());
 
-        //TODO : Comment gérer si chosenType est null ? (l'utilisateur a mal saisi le libellé)
-
-        Restaurant restaurant = pickRestaurant(restaurantServices.searchByType(chosenType));
-        if (restaurant != null) {
-            showRestaurant(restaurant);
+            Restaurant restaurant = pickRestaurant(restaurantServices.searchByType(chosenType));
+            if (restaurant != null) {
+                showRestaurant(restaurant);
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -212,30 +223,32 @@ public class Application {
      * Le programme demande les informations nécessaires à l'utilisateur puis crée un nouveau restaurant dans le système.
      */
     private static void addNewRestaurant() {
-        System.out.println("Vous allez ajouter un nouveau restaurant !");
-        System.out.println("Quel est son nom ?");
-        String name = readString();
-        System.out.println("Veuillez entrer une courte description : ");
-        String description = readString();
-        System.out.println("Veuillez entrer l'adresse de son site internet : ");
-        String website = readString();
-        System.out.println("Rue : ");
-        String street = readString();
-        City city = null;
-        do
-        {
-            city = pickCity(restaurantServices.findAllCities()); //Sila : une seule transaction dans cette méthode , donc comment faire ?
-        } while (city == null);
-        RestaurantType restaurantType = null;
-        do
-        {
-            restaurantType = pickRestaurantType(restaurantServices.findAllRestaurantType());
-        } while (restaurantType == null);
+        try {
+            System.out.println("Vous allez ajouter un nouveau restaurant !");
+            System.out.println("Quel est son nom ?");
+            String name = readString();
+            System.out.println("Veuillez entrer une courte description : ");
+            String description = readString();
+            System.out.println("Veuillez entrer l'adresse de son site internet : ");
+            String website = readString();
+            System.out.println("Rue : ");
+            String street = readString();
+            City city = null;
+            do {
+                city = pickCity(restaurantServices.findAllCities());
+            } while (city == null);
+            RestaurantType restaurantType = null;
+            do {
+                restaurantType = pickRestaurantType(restaurantServices.findAllRestaurantType());
+            } while (restaurantType == null);
 
-        //ici on a une nouvelle transaction
-        Restaurant restaurant = restaurantServices.createRestaurant(name, description, website, street, city, restaurantType);
+            //ici on a une nouvelle transaction
+            Restaurant restaurant = restaurantServices.createRestaurant(name, description, website, street, city, restaurantType);
 
-        showRestaurant(restaurant);
+            showRestaurant(restaurant);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     /**
@@ -253,8 +266,12 @@ public class Application {
         sb.append(restaurant.getAddress().getStreet()).append(", ");
         sb.append(restaurant.getAddress().getCity().getZipCode()).append(" ").append(restaurant.getAddress().getCity().getCityName()).append("\n");
         // C'est l'occasion d'utiliser nos namedqueries pour compter en sql plutot que dans la couche de présentation
-        sb.append("Nombre de likes : ").append(evaluationServices.countLikes(restaurant, true)).append("\n");
-        sb.append("Nombre de dislikes : ").append(evaluationServices.countLikes(restaurant, false)).append("\n");
+        try {
+            sb.append("Nombre de likes : ").append(evaluationServices.countLikes(restaurant, true)).append("\n");
+            sb.append("Nombre de dislikes : ").append(evaluationServices.countLikes(restaurant, false)).append("\n");
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
         sb.append("\nEvaluations reçues : ").append("\n");
 
         String text;
@@ -320,12 +337,20 @@ public class Application {
     private static void proceedRestaurantMenu(int choice, Restaurant restaurant) {
         switch (choice) {
             case 1:
-                evaluationServices.addBasicEvaluation(restaurant, true);
-                System.out.println("Votre vote a été pris en compte !");
+                try {
+                    evaluationServices.addBasicEvaluation(restaurant, true);
+                    System.out.println("Votre vote a été pris en compte !");
+                }catch (Exception e){
+                    System.out.println(e.getMessage());
+                }
                 break;
             case 2:
-                evaluationServices.addBasicEvaluation(restaurant, false);
-                System.out.println("Votre vote a été pris en compte !");
+                try {
+                    evaluationServices.addBasicEvaluation(restaurant, false);
+                    System.out.println("Votre vote a été pris en compte !");
+                }catch (Exception e){
+                    System.out.println(e.getMessage());
+                }
                 break;
             case 3:
                 evaluateRestaurant(restaurant);
@@ -352,26 +377,27 @@ public class Application {
      * @param restaurant Le restaurant à évaluer
      */
     private static void evaluateRestaurant(Restaurant restaurant) {
-        System.out.println("Merci d'évaluer ce restaurant !");
-        System.out.println("Quel est votre nom d'utilisateur ? ");
-        String username = readString();
-        System.out.println("Quel commentaire aimeriez-vous publier ?");
-        String comment = readString();
+        try{
+            System.out.println("Merci d'évaluer ce restaurant !");
+            System.out.println("Quel est votre nom d'utilisateur ? ");
+            String username = readString();
+            System.out.println("Quel commentaire aimeriez-vous publier ?");
+            String comment = readString();
 
-        // L'utilisateur va saisir une note pour chaque critère existant.
-        System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
-        Map<EvaluationCriteria, Integer> grades = new HashMap<>();
-        for (EvaluationCriteria currentCriteria : evaluationServices.findAllEvaluationCriteria()) {
-            System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
-            Integer note = readInt();
-            grades.put(currentCriteria, note);
-        }
-        // on crée tout en une fois, la couche de service gère la transaction (tout pass ou rien)
-        if(evaluationServices.addCompleteEvaluation(restaurant, comment, username, grades)){
+            // L'utilisateur va saisir une note pour chaque critère existant.
+            System.out.println("Veuillez svp donner une note entre 1 et 5 pour chacun de ces critères : ");
+            Map<EvaluationCriteria, Integer> grades = new HashMap<>();
+            for (EvaluationCriteria currentCriteria : evaluationServices.findAllEvaluationCriteria()) {
+                System.out.println(currentCriteria.getName() + " : " + currentCriteria.getDescription());
+                Integer note = readInt();
+                grades.put(currentCriteria, note);
+            }
+            // on crée tout en une fois, la couche de service gère la transaction (tout pass ou rien)
+            evaluationServices.addCompleteEvaluation(restaurant, comment, username, grades);
             System.out.println("Votre évaluation a bien été enregistrée, merci !");
 
-        } else {
-            System.out.println("Quelque chose s'est mal passé et votre évaluation n'a pas été enregistrée, veuillez réessayer s.v.p.");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -382,19 +408,23 @@ public class Application {
      * @param restaurant Le restaurant à modifier
      */
     private static void editRestaurant(Restaurant restaurant) {
-        System.out.println("Edition d'un restaurant !");
+        try{
+            System.out.println("Edition d'un restaurant !");
 
-        System.out.println("Nouveau nom : ");
-        String newName = readString();
-        System.out.println("Nouvelle description : ");
-        String newDescript = readString();
-        System.out.println("Nouveau site web : ");
-        String newWebSite = readString();
-        System.out.println("Nouveau type de restaurant : ");
-        RestaurantType newType = pickRestaurantType(restaurantServices.findAllRestaurantType());
+            System.out.println("Nouveau nom : ");
+            String newName = readString();
+            System.out.println("Nouvelle description : ");
+            String newDescript = readString();
+            System.out.println("Nouveau site web : ");
+            String newWebSite = readString();
+            System.out.println("Nouveau type de restaurant : ");
+            RestaurantType newType = pickRestaurantType(restaurantServices.findAllRestaurantType());
 
-        restaurantServices.updateRestaurant(restaurant, newName, newDescript, newWebSite, newType);
-        System.out.println("Merci, le restaurant a bien été modifié !");
+            restaurantServices.updateRestaurant(restaurant, newName, newDescript, newWebSite, newType);
+            System.out.println("Merci, le restaurant a bien été modifié !");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     /**
@@ -404,13 +434,13 @@ public class Application {
      * @param restaurant Le restaurant dont l'adresse doit être mise à jour.
      */
     private static void editRestaurantAddress(Restaurant restaurant) {
-        System.out.println("Edition de l'adresse d'un restaurant !");
+        try{
+            System.out.println("Edition de l'adresse d'un restaurant !");
 
-        System.out.println("Nouvelle rue : ");
-        String newAdress = readString();
-        City newCity = pickCity(restaurantServices.findAllCities());
+            System.out.println("Nouvelle rue : ");
+            String newAdress = readString();
+            City newCity = pickCity(restaurantServices.findAllCities());
 
-        try {
             restaurantServices.updateRestaurant(restaurant, newAdress, newCity);
             System.out.println("L'adresse a bien été modifiée ! Merci !");
         } catch (Exception e) {
@@ -425,13 +455,17 @@ public class Application {
      */
     private static void deleteRestaurant(Restaurant restaurant) {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
-        String choice = readString();
-        if (choice.equals("o") || choice.equals("O")) {
-            if (restaurantServices.deleteRestaurant(restaurant)){
-                System.out.println("Le restaurant a bien été supprimé !");
-            } else {
-                System.out.println("Quelque chose s'est mal passé, impossible de supprimer le restaurant.");
+        try {
+            String choice = readString();
+            if (choice.equals("o") || choice.equals("O")) {
+                if (restaurantServices.deleteRestaurant(restaurant)) {
+                    System.out.println("Le restaurant a bien été supprimé !");
+                } else {
+                    System.out.println("Quelque chose s'est mal passé, impossible de supprimer le restaurant.");
+                }
             }
+        }catch (Exception e){
+            System.out.println(e.getMessage());
         }
     }
 
