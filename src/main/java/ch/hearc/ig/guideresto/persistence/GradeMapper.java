@@ -15,7 +15,6 @@ public class GradeMapper extends AbstractMapper<Grade> {
         query.setParameter("evaluation", ce);
         Set<Grade> grades = query.getResultStream()
                 .collect(Collectors.toSet());
-
         return grades;
     }
 
@@ -25,17 +24,22 @@ public class GradeMapper extends AbstractMapper<Grade> {
         Set<Grade> grades = em.createQuery(jpqlQuery, Grade.class)
                 .getResultStream()
                 .collect(Collectors.toSet());
-
         return grades;
     }
 
     @Override
     public boolean delete(EntityManager em, Grade grade) {
-        try {
-            em.remove(grade);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        int deletedCount = em.createQuery("DELETE FROM Grade g WHERE g = :grade")
+                .setParameter("grade", grade)
+                .executeUpdate();
+        return deletedCount > 0;
     }
+    public int deleteByEvaluation(EntityManager em, CompleteEvaluation eval) {
+        String jpqlQuery = "DELETE FROM Grade gr WHERE evaluation.id = :evaluationId";
+        int deletedCount = em.createQuery(jpqlQuery)
+                .setParameter("evaluationId", eval.getId())
+                .executeUpdate();
+        return deletedCount;
+    }
+
 }

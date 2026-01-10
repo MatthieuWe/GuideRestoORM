@@ -16,7 +16,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         query.setParameter("restaurant", resto);
         Set<Evaluation> basicEvaluations = query.getResultStream()
                 .collect(Collectors.toSet());
-
         return basicEvaluations;
     }
 
@@ -26,7 +25,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         Set<BasicEvaluation> basicEvaluations = em.createQuery(jpqlQuery, BasicEvaluation.class)
                 .getResultStream()
                 .collect(Collectors.toSet());
-
         return basicEvaluations;
     }
 
@@ -39,11 +37,16 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public boolean delete(EntityManager em, BasicEvaluation basicEvaluation) {
-        try {
-            em.remove(basicEvaluation);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        int deletedCount = em.createQuery("DELETE FROM BasicEvaluation be WHERE be = :basicEvaluation")
+                .setParameter("basicEvaluation", basicEvaluation)
+                .executeUpdate();
+        return deletedCount > 0;
+    }
+    public int deleteByRestaurant(EntityManager em, Restaurant resto) {
+        String jpqlQuery = "DELETE FROM BasicEvaluation be WHERE restaurant.id = :restaurantId";
+        int deletedCount = em.createQuery(jpqlQuery)
+                .setParameter("restaurantId", resto.getId())
+                .executeUpdate();
+        return deletedCount;
     }
 }

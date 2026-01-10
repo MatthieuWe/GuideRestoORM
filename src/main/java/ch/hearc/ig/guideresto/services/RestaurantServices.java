@@ -35,36 +35,40 @@ public class RestaurantServices {
         typeMapper = new RestaurantTypeMapper();
     }
 
-    public Set<Restaurant> findAllRestaurant() {
-        return restaurantMapper.findAll(em);
+    public Set<Restaurant> findAllRestaurant() throws Exception {
+        try {
+            return restaurantMapper.findAll(em);
+        } catch (Exception e) {
+            logger.error("Error while fetching all restaurants: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des restaurants, veuillez réessayer plus tard.");
+        }
     }
 
-    public Set<RestaurantType> findAllRestaurantType() {
+    public Set<RestaurantType> findAllRestaurantType() throws Exception {
         try {
-            String findAllRestaurantType = "SELECT t FROM RestaurantType t ";
-            TypedQuery<RestaurantType> query = em.createQuery(findAllRestaurantType, RestaurantType.class);
-            return new HashSet<RestaurantType>(query.getResultList());
+            return typeMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all restaurant types: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all restaurant types: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des types, veuillez réessayer plus tard.");
         }
     }
 
-    public Set<City> findAllCities(){
+    public Set<City> findAllCities() throws Exception {
         try {
-            String findAllCity = "SELECT c FROM City c";
-            TypedQuery<City> query = em.createQuery(findAllCity, City.class);
-            return new HashSet<City>(query.getResultList());
+           return cityMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all cities: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all cities: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des villes, veuillez réessayer plus tard.");
         }
-
-
     }
 
-    public Set<Restaurant> searchByName(String search){
-        return restaurantMapper.findByName(em, search);
+    public Set<Restaurant> searchByName(String search) throws Exception {
+        try {
+            return restaurantMapper.findByName(em, search);
+        } catch (Exception e) {
+            logger.error("Error while searching restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
+        }
     }
     /*
     Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
@@ -72,108 +76,136 @@ public class RestaurantServices {
     Note:
     Solution A - c'est une opportunité d'utiliser notre cityMapper MAIS
     Solution B -  c'est plus efficace d'adapter notre méthode findByCity Dans le restaurantMapper pour qu'elle fasse
-    tout ça directement en JPQL avec une jointure. Quand on boucle sur un resultset pour refaire des select, ya un problème
+    tout ça directement en JPQL avec une jointure. Boucler sur un resultset pour refaire des select, c'est pas beau.
      */
-    public Set<Restaurant> searchByCity(String search){
-        // Solution A
-        Set<City> cities = cityMapper.findByName(em, search);
-        Set<Restaurant> restos = new HashSet<>();
-        for (City city : cities) {
-            restos.addAll(restaurantMapper.findByCity(em, city));
-        }
-        return restos;
-        // Solution B - meilleur
-        /*
-        return restaurantMapper.findByCityName(em, search);
-        */
-    }
-    public Set<Restaurant> searchByType(RestaurantType type){
-        return restaurantMapper.findByType(em, type);
-    }
-
-    public City createCity(String zipCode, String cityName) {
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-        City city = new City(zipCode, cityName);
-        em.persist(city);
-        tx.commit();
-        return city; //à tester la persistance
-    }
-
-
-    public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        Restaurant restaurant = new Restaurant();
-        restaurant.setName(name);
-        restaurant.setDescription(description);
-        restaurant.setWebsite(website);
-        restaurant.setAddress(new Localisation(street, city));
-        restaurant.setType(restaurantType);
-        em.persist(restaurant);
-        tx.commit();
-
-        return restaurant;
-    }
-
-    public void updateRestaurant(Restaurant restaurant, RestaurantType newType, City newCity) {
-        EntityTransaction tx = em.getTransaction();
-        try{
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for update.");
-                return;
+    public Set<Restaurant> searchByCity(String search) throws Exception {
+        try {
+            // Solution A
+            Set<City> cities = cityMapper.findByName(em, search);
+            Set<Restaurant> restos = new HashSet<>();
+            for (City city : cities) {
+                restos.addAll(restaurantMapper.findByCity(em, city));
             }
-            tx.begin();
-            em.detach(restaurant); // why ??
-            restaurant.setType(newType);
-            restaurant.setAddress(new Localisation (restaurant.getAddress().getStreet(), newCity));
-            em.merge(restaurant);
+            return restos;
+            // Solution B - meilleur
+            /*
+            return restaurantMapper.findByCityName(em, search);
+            */
+        } catch (Exception e) {
+            logger.error("Error while searching restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
+        }
+    }
+    public Set<Restaurant> searchByType(RestaurantType type) throws Exception{
+        try{
+            return restaurantMapper.findByType(em, type);
+        } catch (Exception e) {
+            logger.error("Error while searching restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
+        }
+    }
 
-            tx.commit();
+    /*
+    * Cette méthode crée une nouvelle ville en mémoire mais ne la persiste pas !
+    * Elle sera persisté dans une seule et même transaction lors de la création du restaurant,
+    * Si cette transaction échoue, on n'a pas besoin de cette nouvelle ville dans la DB
+     */
+    public City createCity(String zipCode, String cityName) throws Exception {
+        try {
+            return new City(zipCode, cityName);
+        }catch (Exception e){
+            logger.error("Error while creating city: " + e.getMessage());
+            throw new Exception("Erreur lors de la creation de la ville, veuillez réessayer plus tard.");
+        }
+    }
+
+
+    public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) throws Exception {
+        Restaurant restaurant = new Restaurant();
+        try {
+            restaurant.setName(name);
+            restaurant.setDescription(description);
+            restaurant.setWebsite(website);
+            restaurant.setAddress(new Localisation(street, city));
+            restaurant.setType(restaurantType);
+
+            city.getRestaurants().add(restaurant);
+            restaurantType.getRestaurants().add(restaurant);
+
+            JpaUtils.inTransaction(em -> {
+                if (!em.contains(city)) { // la ville n'est pas encore persistée, créée par l'utilisateur pour ce nouveau resto
+                    em.persist(city);
+                }
+                em.persist(restaurant);
+            });
+            return restaurant;
+        } catch (Exception e) {
+            logger.error("Error creating restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la creation du restaurant, veuillez réessayer plus tard.");
+        }
+    }
+
+    public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) throws Exception{
+        try{
+            if(em.contains(restaurant)) {
+                JpaUtils.inTransaction(em -> {
+                    em.detach(restaurant);
+                    restaurant.setAddress(new Localisation(newAddress, newCity));
+                    em.merge(restaurant);
+                });
+            } else {
+                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
+            }
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
-            tx.rollback();
+            throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
         }
     }
 
-    public boolean deleteRestaurant(Restaurant restaurant){
-        EntityTransaction tx = em.getTransaction();
-        try {
-            restaurant = em.find(Restaurant.class, restaurant.getId());
-            if (restaurant == null) {
-                logger.warn("Restaurant with ID " + restaurant.getId() + " not found for deletion.");
-                return false;
-            }
-            tx.begin();
-            // TODO c'est pas mieux mais on peut utiliser un de nos mappers ici
-            for (Evaluation eval : new HashSet<>(restaurant.getEvaluations())) {
-                em.remove(eval);
-            }
-            em.remove(restaurant);
-            // TODO vérifier si la ville est encore utilisée et sinon l'effacer aussi
-            tx.commit();
-            return true;
-
+    public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) throws Exception {
+        try{
+            JpaUtils.inTransaction(em -> {
+                restaurant.setName(newName);
+                restaurant.setDescription(newDescription);
+                restaurant.setWebsite(newWebsite);
+                restaurant.setType(newType);
+            });
         } catch (Exception e) {
-            logger.error("Error while deleting associated evaluations: " + e.getMessage());
-            tx.rollback();
-            return false;
+            logger.error("Error while updating restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
+
+        }
+    }
+
+    /*
+    * Efface un restaurant de la DB avec tous ses objets dépendants (evaluations) ainsi que la ville si elle
+    * n'est pas utilisée par un autre restaurant
+    * On efface les evaluations et les notes grâce au cascade delete défini dans le mapping des objets
+     */
+    public boolean deleteRestaurant(Restaurant restaurant) throws Exception {
+        try {
+           // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
+           // le type osef on le laisse car il n'y a pas de méthode pour en ajouter dans l'interface
+           // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
+           // TODO il y a encore un bug, si on essaie d'effacer un resto créé dans la meme session ça plante.
+           JpaUtils.inTransaction(em -> {
+              City city = restaurant.getAddress().getCity();
+              city.getRestaurants().remove(restaurant);
+              restaurant.getType().getRestaurants().remove(restaurant);
+              em.remove(restaurant);
+              if (city.getRestaurants().isEmpty()) {
+                 em.remove(city);
+              }
+           });
+           return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Error while deleting restaurant: " + e.getMessage());
+            throw new Exception("Erreur lors de l'effacement du restaurant, veuillez réessayer plus tard.");
         }
     }
 
     public void shutdown() {
         em.close();
     }
-
-    public String test(Restaurant r) {
-        Set<Evaluation> be = new BasicEvaluationMapper().findByRestaurant(em, r);
-        StringBuilder sb = new StringBuilder();
-        for (Evaluation eval : be) {
-            sb.append(eval.toString());
-        }
-        return sb.toString();
-    }
-
 }

@@ -13,6 +13,7 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class EvaluationServices {
@@ -23,11 +24,13 @@ public class EvaluationServices {
     //mappers
     private BasicEvaluationMapper beMapper ;
     private CompleteEvaluationMapper ceMapper ;
+    private GradeMapper gMapper ;
 
     public EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
         ceMapper = new CompleteEvaluationMapper();
+        gMapper = new GradeMapper();
     }
 
     /**
@@ -37,19 +40,23 @@ public class EvaluationServices {
      * @param likeRestaurant Veut-on le nombre d'évaluations positives ou négatives ?
      * @return Le nombre d'évaluations positives ou négatives trouvées
      */
-    public Long countLikes(Restaurant resto, Boolean likeRestaurant) {
-        return beMapper.countForRestaurant(em, resto, likeRestaurant);
+    public Long countLikes(Restaurant resto, Boolean likeRestaurant) throws Exception {
+        try {
+            return beMapper.countForRestaurant(em, resto, likeRestaurant);
+        }catch (Exception e) {
+            logger.error("Error while counting likes : " + e.getMessage());
+            throw new Exception("Erreur lors du comptage des likes, veuillez réessayer plus tard.");
+        }
     }
 
-    public Set<EvaluationCriteria> findAllEvaluationCriteria() {
-        EntityManager em = JpaUtils.getEntityManager();
+    public Set<EvaluationCriteria> findAllEvaluationCriteria() throws Exception {
         try {
             String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
             TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
             return new HashSet<EvaluationCriteria>(query.getResultList());
         } catch (Exception e) {
             logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
-            throw new RuntimeException("Error while fetching all evaluation criteria: " + e.getMessage());
+            throw new Exception("Erreur lors de la récupération des évaluations, veuillez réessayer plus tard.");
         }
     }
     /**
@@ -63,46 +70,65 @@ public class EvaluationServices {
      * @param restaurant Le restaurant qui est évalué
      * @param like       Est-ce un like ou un dislike ?
      */
-    public void addBasicEvaluation(Restaurant restaurant, Boolean like) {
-        String ipAddress;
+    public void addBasicEvaluation(Restaurant restaurant, Boolean like) throws Exception {
         try {
-            ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
-        } catch (UnknownHostException ex) {
-            logger.error("Error - Couldn't retreive host IP address");
-            ipAddress = "Indisponible";
+            String ipAddress;
+            try {
+                ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
+            } catch (UnknownHostException ex) {
+                logger.warn("Warning - Couldn't retreive host IP address");
+                ipAddress = "Indisponible";
+            }
+            BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
+            JpaUtils.inTransaction(em -> {
+                em.persist(eval);
+            });
+        } catch (Exception e) {
+            logger.error("Error while adding evaluation : " + e.getMessage());
+            throw new Exception("Erreur lors de l'ajout de l'évaluation, veuillez réessayer plus tard.");
         }
-        EntityTransaction tx = em.getTransaction();
-
-        tx.begin();
-        BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
-        em.persist(eval);
-        tx.commit();
     }
 
     /*
-    * TODO il faut trouver un moyen de regrouper cette méthode et tous appels à createGrade suivants dans une seule transaction
-    *  pt en envoyant tout en une fois depuis la couche de présentation, les notes dans un array... jsp - MW
+    * Ajoute et persiste une évaluation complète a un restaurant
+    * parametre "grades" : fournir une Map avec le critère comme clé et la note comme valeur
      */
-    public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String comment, String username) {
-        EntityTransaction tx = em.getTransaction();
+    public void addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) throws Exception {
+        try {
+            JpaUtils.inTransaction(em-> {
+                CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
+                em.persist(eval);
+                eval.setGrades(new HashSet<>());
 
-        tx.begin();
-        CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
-        em.persist(eval);
-        tx.commit();
-
-        return eval;
+                for (EvaluationCriteria ec : grades.keySet()) {
+                    Integer note = grades.get(ec);
+                    Grade grade = new Grade(note, eval, ec);
+                    em.persist(grade);
+                    eval.getGrades().add(grade);
+                }
+                restaurant.getEvaluations().add(eval);
+            });
+        } catch (Exception e) {
+            logger.error("Error while adding complete evaluation: " + e.getMessage());
+            throw new Exception("Erreur lors de l'ajout de l'évaluation, veuillez réessayer plus tard.");
+        }
     }
 
-    public Grade createGrade(Integer note, CompleteEvaluation eval, EvaluationCriteria currentCriteria) {
-        EntityTransaction tx = em.getTransaction();
+    /*
+    * On ne gère pas les transactions dans cette méthode, elle est utile dans le cadre de l'effacement d'un resto
+    * complet -> on gère plus haut, tout est effacé sinon rien
+     */
+    public void deleteByRestaurant(Restaurant restaurant) {
+        beMapper.deleteByRestaurant(em, restaurant);
+        for(Evaluation eval : restaurant.getEvaluations()) {
+            if (eval instanceof CompleteEvaluation) {
+                gMapper.deleteByEvaluation(em, (CompleteEvaluation) eval);
+                // on pourrait mais c'est pas opti, je prefere une seule requete en bloc à la fin
+                // ceMapper.delete(em, (CompleteEvaluation) eval);
+            }
+        }
+        ceMapper.deleteByRestaurant(em, restaurant);
 
-        tx.begin();
-        Grade grade = new Grade(note, eval, currentCriteria);
-        em.persist(grade);
-        tx.commit();
-
-        return grade;
     }
     public void shutdown() {
         em.close();
