@@ -166,11 +166,10 @@ public class RestaurantServices {
                 Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
                 managedRestaurant.setAddress(new Localisation(newAddress, newCity));
             });
-        } 
-      } catch (OptimisticLockException e) {
+        } catch (OptimisticLockException e) {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
             throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
-    } catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
         }
