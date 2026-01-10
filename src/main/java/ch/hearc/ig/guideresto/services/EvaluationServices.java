@@ -21,16 +21,25 @@ public class EvaluationServices {
     private static final Logger logger = LogManager.getLogger(EvaluationServices.class);
     private final EntityManager em ;
 
+    private static EvaluationServices instance;
+
     //mappers
     private BasicEvaluationMapper beMapper ;
     private CompleteEvaluationMapper ceMapper ;
     private GradeMapper gMapper ;
 
-    public EvaluationServices() {
+    private EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
         ceMapper = new CompleteEvaluationMapper();
         gMapper = new GradeMapper();
+    }
+
+    public static EvaluationServices getInstance() {
+        if (instance == null) {
+            instance = new EvaluationServices();
+        }
+        return instance;
     }
 
     /**
@@ -72,15 +81,17 @@ public class EvaluationServices {
      */
     public void addBasicEvaluation(Restaurant restaurant, Boolean like) throws Exception {
         try {
-            String ipAddress;
+            String tempIpAddress;
             try {
-                ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
+                tempIpAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
             } catch (UnknownHostException ex) {
                 logger.warn("Warning - Couldn't retreive host IP address");
-                ipAddress = "Indisponible";
+                tempIpAddress = "Indisponible";
             }
-            BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
+            final String ipAddress = tempIpAddress;
             JpaUtils.inTransaction(em -> {
+                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                BasicEvaluation eval = new BasicEvaluation(new Date(), managedRestaurant, like, ipAddress);
                 em.persist(eval);
             });
         } catch (Exception e) {
@@ -96,7 +107,8 @@ public class EvaluationServices {
     public void addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) throws Exception {
         try {
             JpaUtils.inTransaction(em-> {
-                CompleteEvaluation eval = new CompleteEvaluation(new Date(), restaurant, comment, username);
+                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                CompleteEvaluation eval = new CompleteEvaluation(new Date(), managedRestaurant, comment, username);
                 em.persist(eval);
                 eval.setGrades(new HashSet<>());
 
@@ -106,7 +118,7 @@ public class EvaluationServices {
                     em.persist(grade);
                     eval.getGrades().add(grade);
                 }
-                restaurant.getEvaluations().add(eval);
+                managedRestaurant.getEvaluations().add(eval);
             });
         } catch (Exception e) {
             logger.error("Error while adding complete evaluation: " + e.getMessage());
@@ -114,22 +126,6 @@ public class EvaluationServices {
         }
     }
 
-    /*
-    * On ne gère pas les transactions dans cette méthode, elle est utile dans le cadre de l'effacement d'un resto
-    * complet -> on gère plus haut, tout est effacé sinon rien
-     */
-    public void deleteByRestaurant(Restaurant restaurant) {
-        beMapper.deleteByRestaurant(em, restaurant);
-        for(Evaluation eval : restaurant.getEvaluations()) {
-            if (eval instanceof CompleteEvaluation) {
-                gMapper.deleteByEvaluation(em, (CompleteEvaluation) eval);
-                // on pourrait mais c'est pas opti, je prefere une seule requete en bloc à la fin
-                // ceMapper.delete(em, (CompleteEvaluation) eval);
-            }
-        }
-        ceMapper.deleteByRestaurant(em, restaurant);
-
-    }
     public void shutdown() {
         em.close();
     }

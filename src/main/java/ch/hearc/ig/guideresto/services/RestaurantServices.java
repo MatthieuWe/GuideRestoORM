@@ -9,6 +9,7 @@ import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
@@ -24,16 +25,25 @@ public class RestaurantServices {
     private static final Logger logger = LogManager.getLogger(RestaurantServices.class);
     private final EntityManager em ;
 
+    private static RestaurantServices instance;
+
     //mappers
     private RestaurantMapper restaurantMapper ;
     private CityMapper cityMapper ;
     private RestaurantTypeMapper typeMapper ;
 
-    public RestaurantServices() {
+    private RestaurantServices() {
         em = JpaUtils.getEntityManager();
         restaurantMapper = new RestaurantMapper();
         cityMapper = new CityMapper();
         typeMapper = new RestaurantTypeMapper();
+    }
+
+    public static RestaurantServices getInstance() {
+        if (instance == null) {
+            instance = new RestaurantServices();
+        }
+        return instance;
     }
 
     public Set<Restaurant> findAllRestaurant() throws Exception {
@@ -113,6 +123,10 @@ public class RestaurantServices {
      */
     public City createCity(String zipCode, String cityName) throws Exception {
         try {
+            // check si la ville existe deja et la retourne à la place - peu probable
+            return cityMapper.findByZipAndName(em, zipCode, cityName);
+        }catch (NoResultException nre){
+            // si on n'a rien trouvé
             return new City(zipCode, cityName);
         }catch (Exception e){
             logger.error("Error while creating city: " + e.getMessage());
@@ -148,20 +162,15 @@ public class RestaurantServices {
 
     public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) throws Exception{
         try{
-            if(em.contains(restaurant)) {
-                JpaUtils.inTransaction(em -> {
-                    em.detach(restaurant);
-                    restaurant.setAddress(new Localisation(newAddress, newCity));
-                    em.merge(restaurant);
-                });
-            } else {
-                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
-            }
-        } catch (OptimisticLockException e) {
+            JpaUtils.inTransaction(em -> {
+                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                managedRestaurant.setAddress(new Localisation(newAddress, newCity));
+            });
+        } 
+      } catch (OptimisticLockException e) {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
-            //tx.rollback();
             throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
-        } catch (Exception e) {
+    } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la mise à jour du restaurant, veuillez réessayer plus tard.");
         }
@@ -170,10 +179,11 @@ public class RestaurantServices {
     public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) throws Exception {
         try {
             JpaUtils.inTransaction(em -> {
-                restaurant.setName(newName);
-                restaurant.setDescription(newDescription);
-                restaurant.setWebsite(newWebsite);
-                restaurant.setType(newType);
+                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                managedRestaurant.setName(newName);
+                managedRestaurant.setDescription(newDescription);
+                managedRestaurant.setWebsite(newWebsite);
+                managedRestaurant.setType(newType);
             });
         } catch (OptimisticLockException e) {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
@@ -197,13 +207,14 @@ public class RestaurantServices {
            // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
            // TODO il y a encore un bug, si on essaie d'effacer un resto créé dans la meme session ça plante.
            JpaUtils.inTransaction(em -> {
-              City city = restaurant.getAddress().getCity();
-              city.getRestaurants().remove(restaurant);
-              restaurant.getType().getRestaurants().remove(restaurant);
-              em.remove(restaurant);
-              if (city.getRestaurants().isEmpty()) {
-                 em.remove(city);
-              }
+               Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+               City city = managedRestaurant.getAddress().getCity();
+               city.getRestaurants().remove(managedRestaurant);
+               managedRestaurant.getType().getRestaurants().remove(managedRestaurant);
+               em.remove(managedRestaurant);
+               if (city.getRestaurants().isEmpty()) {
+                  em.remove(city);
+               }
            });
            return true;
         } catch (OptimisticLockException e) {
