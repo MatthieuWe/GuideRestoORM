@@ -68,7 +68,7 @@ public class RestaurantServices {
     Note:
     Solution A - c'est une opportunité d'utiliser notre cityMapper MAIS
     Solution B -  c'est plus efficace d'adapter notre méthode findByCity Dans le restaurantMapper pour qu'elle fasse
-    tout ça directement en JPQL avec une jointure. Quand on boucle sur un resultset pour refaire des select, ya un problème
+    tout ça directement en JPQL avec une jointure. Boucler sur un resultset pour refaire des select, c'est pas beau.
      */
     public Set<Restaurant> searchByCity(String search){
         // Solution A
@@ -90,7 +90,7 @@ public class RestaurantServices {
     /*
     * Cette méthode crée une nouvelle ville en mémoire mais ne la persiste pas !
     * Elle sera persisté dans une seule et même transaction lors de la création du restaurant,
-    * Si cette transaction échoue, on n'a pas besoin de cette nouvelle ville en mémoire.
+    * Si cette transaction échoue, on n'a pas besoin de cette nouvelle ville dans la DB
      */
     public City createCity(String zipCode, String cityName) {
         return new City(zipCode, cityName);
@@ -139,24 +139,16 @@ public class RestaurantServices {
 
     public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) {
         try{
-            if(em.contains(restaurant)) {
-                JpaUtils.inTransaction(em -> {
-                    em.detach(restaurant);
-                    restaurant.setName(newName);
-                    restaurant.setDescription(newDescription);
-                    restaurant.setWebsite(newWebsite);
-                    restaurant.setType(newType);
-                    em.merge(restaurant);
-                });
-            } else {
-                throw new Exception("Restaurant " + restaurant.getName() + " n'existe pas dans la DB");
-            }
+            JpaUtils.inTransaction(em -> {
+                restaurant.setName(newName);
+                restaurant.setDescription(newDescription);
+                restaurant.setWebsite(newWebsite);
+                restaurant.setType(newType);
+            });
         } catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
         }
     }
-
-
 
     /*
     * Efface un restaurant de la DB avec tous ses objets dépendants (evaluations) ainsi que la ville si elle

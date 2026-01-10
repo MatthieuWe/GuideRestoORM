@@ -45,7 +45,6 @@ public class EvaluationServices {
     }
 
     public Set<EvaluationCriteria> findAllEvaluationCriteria() {
-        EntityManager em = JpaUtils.getEntityManager();
         try {
             String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
             TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
@@ -106,22 +105,16 @@ public class EvaluationServices {
     * On ne gère pas les transactions dans cette méthode, elle est utile dans le cadre de l'effacement d'un resto
     * complet -> on gère plus haut, tout est effacé sinon rien
      */
-    public Boolean deleteByRestaurant(Restaurant restaurant) {
-        Boolean success = beMapper.deleteByRestaurant(em, restaurant);
-        if (!success) {
-            return false;
-        }
+    public void deleteByRestaurant(Restaurant restaurant) {
+        beMapper.deleteByRestaurant(em, restaurant);
         for(Evaluation eval : restaurant.getEvaluations()) {
             if (eval instanceof CompleteEvaluation) {
-                success = gMapper.deleteByEvaluation(em, (CompleteEvaluation) eval);
-                if (!success) {
-                    return false;
-                }
+                gMapper.deleteByEvaluation(em, (CompleteEvaluation) eval);
                 // on pourrait mais c'est pas opti, je prefere une seule requete en bloc à la fin
                 // ceMapper.delete(em, (CompleteEvaluation) eval);
             }
         }
-        return ceMapper.deleteByRestaurant(em, restaurant);
+        ceMapper.deleteByRestaurant(em, restaurant);
 
     }
     public void shutdown() {

@@ -410,9 +410,12 @@ public class Application {
         String newAdress = readString();
         City newCity = pickCity(restaurantServices.findAllCities());
 
-        restaurantServices.updateRestaurant(restaurant, newAdress, newCity);
-
-        System.out.println("L'adresse a bien été modifiée ! Merci !");
+        try {
+            restaurantServices.updateRestaurant(restaurant, newAdress, newCity);
+            System.out.println("L'adresse a bien été modifiée ! Merci !");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     /**
