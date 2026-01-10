@@ -76,7 +76,7 @@ public class EvaluationServices {
             try {
                 ipAddress = Inet4Address.getLocalHost().toString(); // Permet de retrouver l'adresse IP locale de l'utilisateur.
             } catch (UnknownHostException ex) {
-                logger.error("Error - Couldn't retreive host IP address");
+                logger.warn("Warning - Couldn't retreive host IP address");
                 ipAddress = "Indisponible";
             }
             BasicEvaluation eval = new BasicEvaluation(new Date(), restaurant, like, ipAddress);
