@@ -21,16 +21,25 @@ public class EvaluationServices {
     private static final Logger logger = LogManager.getLogger(EvaluationServices.class);
     private final EntityManager em ;
 
+    private static EvaluationServices instance;
+
     //mappers
     private BasicEvaluationMapper beMapper ;
     private CompleteEvaluationMapper ceMapper ;
     private GradeMapper gMapper ;
 
-    public EvaluationServices() {
+    private EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
         ceMapper = new CompleteEvaluationMapper();
         gMapper = new GradeMapper();
+    }
+
+    public static EvaluationServices getInstance() {
+        if (instance == null) {
+            instance = new EvaluationServices();
+        }
+        return instance;
     }
 
     /**

@@ -24,8 +24,8 @@ public class Application {
     public static void main(String[] args) {
 
         scanner = new Scanner(System.in);
-        restaurantServices = new RestaurantServices();
-        evaluationServices = new EvaluationServices();
+        restaurantServices = RestaurantServices.getInstance();
+        evaluationServices = EvaluationServices.getInstance();
 
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;

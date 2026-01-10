@@ -23,16 +23,25 @@ public class RestaurantServices {
     private static final Logger logger = LogManager.getLogger(RestaurantServices.class);
     private final EntityManager em ;
 
+    private static RestaurantServices instance;
+
     //mappers
     private RestaurantMapper restaurantMapper ;
     private CityMapper cityMapper ;
     private RestaurantTypeMapper typeMapper ;
 
-    public RestaurantServices() {
+    private RestaurantServices() {
         em = JpaUtils.getEntityManager();
         restaurantMapper = new RestaurantMapper();
         cityMapper = new CityMapper();
         typeMapper = new RestaurantTypeMapper();
+    }
+
+    public static RestaurantServices getInstance() {
+        if (instance == null) {
+            instance = new RestaurantServices();
+        }
+        return instance;
     }
 
     public Set<Restaurant> findAllRestaurant() {
