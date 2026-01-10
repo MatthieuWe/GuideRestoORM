@@ -15,11 +15,20 @@ public class CityMapper extends AbstractMapper<City> {
         TypedQuery<City> query = em.createQuery(findAllCity, City.class);
         return new HashSet<City>(query.getResultList());
     }
-    
+
     public Set<City> findByName(EntityManager em, String partialName) {
         TypedQuery<City> cityQuery = em.createNamedQuery("City.findByName", City.class);
         cityQuery.setParameter("name", "%" + partialName.toLowerCase() + "%");
         return new HashSet<>(cityQuery.getResultList());
+    }
+    public City findByZipAndName(EntityManager em,String zip, String name) {
+        // L'unicité zip et nom n'est pas garantie par la DB mais on va fermer les yeux sur ce détail et gérer ça ici
+        // on prend le premier de la liste comme Cédric Baudet et elle est belle.
+        // Problème déjà décrit dans Application > searchCityByZipCode (env. l. 490-500)
+        TypedQuery<City> cityQuery = em.createNamedQuery("City.findByExactZipAndName", City.class);
+        cityQuery.setParameter("zip", zip);
+        cityQuery.setParameter("name", name);
+        return cityQuery.getResultList().getFirst();
     }
     public boolean purgeCity(EntityManager em, City city) {
         int deletedCount = em.createQuery("DELETE FROM City ci WHERE ci = :city" +

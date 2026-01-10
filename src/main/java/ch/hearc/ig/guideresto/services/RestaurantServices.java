@@ -9,6 +9,7 @@ import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,6 +122,10 @@ public class RestaurantServices {
      */
     public City createCity(String zipCode, String cityName) throws Exception {
         try {
+            // check si la ville existe deja et la retourne à la place - peu probable
+            return cityMapper.findByZipAndName(em, zipCode, cityName);
+        }catch (NoResultException nre){
+            // si on n'a rien trouvé
             return new City(zipCode, cityName);
         }catch (Exception e){
             logger.error("Error while creating city: " + e.getMessage());
