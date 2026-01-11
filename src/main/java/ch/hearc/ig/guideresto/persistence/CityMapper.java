@@ -10,6 +10,7 @@ import java.util.Set;
 
 public class CityMapper extends AbstractMapper<City> {
 
+    @Override
     public Set<City> findAll(EntityManager em) {
         String findAllCity = "SELECT c FROM City c";
         TypedQuery<City> query = em.createQuery(findAllCity, City.class);
@@ -22,14 +23,17 @@ public class CityMapper extends AbstractMapper<City> {
         return new HashSet<>(cityQuery.getResultList());
     }
     public City findByZipAndName(EntityManager em,String zip, String name) {
-        // L'unicité zip et nom n'est pas garantie par la DB mais on va fermer les yeux sur ce détail et gérer ça ici
-        // on prend le premier de la liste comme Cédric Baudet et elle est belle.
-        // Problème déjà décrit dans Application > searchCityByZipCode (env. l. 490-500)
+        /*
+        **La Base de Données ne garantit pas l'unicité zip et du nom pour une ville, on le gère ici.
+        * On prends également le premier de la liste pour rester alignés avec le code fournit par M. Baudet.
+        * Voir aussi Application > searchCityByZipCode (env. l. 490-500)
+         */
         TypedQuery<City> cityQuery = em.createNamedQuery("City.findByExactZipAndName", City.class);
         cityQuery.setParameter("zip", zip);
         cityQuery.setParameter("name", name);
         return cityQuery.getResultList().getFirst();
     }
+
     public boolean purgeCity(EntityManager em, City city) {
         int deletedCount = em.createQuery("DELETE FROM City ci WHERE ci = :city" +
                 " AND NOT EXISTS (SELECT r FROM Restaurant r WHERE r.address.city = :city)")
@@ -37,6 +41,8 @@ public class CityMapper extends AbstractMapper<City> {
                 .executeUpdate();
         return deletedCount > 0;
     }
+
+    @Override
     public boolean delete(EntityManager em, City city) {
         int deletedCount = em.createQuery("DELETE FROM City cy WHERE cy = :city")
                 .setParameter("city", city)

@@ -16,12 +16,14 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
        return typeQuery.getSingleResult();
     }
 
+    @Override
     public Set<RestaurantType> findAll(EntityManager em) {
         String findAllRestaurantType = "SELECT t FROM RestaurantType t ";
         TypedQuery<RestaurantType> query = em.createQuery(findAllRestaurantType, RestaurantType.class);
         return new HashSet<RestaurantType>(query.getResultList());
     }
 
+    @Override
     public boolean delete(EntityManager em, RestaurantType restaurantType) {
         int deletedCount = em.createQuery("DELETE FROM RestaurantType ty WHERE ty = :restaurantType")
                 .setParameter("restaurantType", restaurantType)

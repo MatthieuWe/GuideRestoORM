@@ -23,7 +23,6 @@ public class RestaurantServices {
 
     private static RestaurantServices instance;
 
-    //mappers
     private RestaurantMapper restaurantMapper ;
     private CityMapper cityMapper ;
     private RestaurantTypeMapper typeMapper ;
@@ -77,6 +76,7 @@ public class RestaurantServices {
             throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
         }
     }
+
     /*
     Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
     et le programme accepte une partie du nom) puis retourne tous les restos de chaque ville correspondante à la recherche
@@ -103,6 +103,7 @@ public class RestaurantServices {
             throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
         }
     }
+
     public Set<Restaurant> searchByType(RestaurantType type) throws Exception{
         try{
             return restaurantMapper.findByType(em, type);
@@ -119,17 +120,16 @@ public class RestaurantServices {
      */
     public City createCity(String zipCode, String cityName) throws Exception {
         try {
-            // check si la ville existe deja et la retourne à la place - peu probable
+            // Nous faisons tout de même un check pour voir si la ville existe déjà (peu probable)
             return cityMapper.findByZipAndName(em, zipCode, cityName);
         }catch (NoResultException nre){
-            // si on n'a rien trouvé - le cas le plus courant
+            // Si rien n'est trouvé, on crée la nouvelle ville
             return new City(zipCode, cityName);
         }catch (Exception e){
             logger.error("Error while creating city: " + e.getMessage());
             throw new Exception("Erreur lors de la creation de la ville, veuillez réessayer plus tard.");
         }
     }
-
 
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) throws Exception {
         Restaurant restaurant = new Restaurant();
@@ -164,7 +164,7 @@ public class RestaurantServices {
             managedCity.getRestaurants().add(restaurant);
 
             // enfin on persiste le resto
-            // les eval osef: il n'en a logiquement pas encore car on vient de le créer
+            // On ne gère pas les évaluations pour un nouveau restaurant, il est normal qu'il n'en ait pas encore
             em.persist(restaurant);
             });
             return restaurant;
@@ -250,7 +250,7 @@ public class RestaurantServices {
     public boolean deleteRestaurant(Restaurant restaurant) throws Exception {
         try {
            // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
-           // le type osef on le laisse car il n'y a pas de méthode pour en ajouter dans l'interface
+           // Nous ne gérons pas l'interface car il n'y a pas de méthode dans l'interface pour en ajouter des nouveaux
            // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
            JpaUtils.inTransaction(em -> {
                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());

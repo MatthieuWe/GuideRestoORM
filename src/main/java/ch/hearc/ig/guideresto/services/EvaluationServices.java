@@ -23,16 +23,17 @@ public class EvaluationServices {
 
     private static EvaluationServices instance;
 
-    //mappers
     private BasicEvaluationMapper beMapper ;
     private CompleteEvaluationMapper ceMapper ;
     private GradeMapper gMapper ;
+    private EvaluationCriteriaMapper ecMapper ;
 
     private EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
         ceMapper = new CompleteEvaluationMapper();
         gMapper = new GradeMapper();
+        ecMapper = new EvaluationCriteriaMapper();
     }
 
     public static EvaluationServices getInstance() {
@@ -60,17 +61,15 @@ public class EvaluationServices {
 
     public Set<EvaluationCriteria> findAllEvaluationCriteria() throws Exception {
         try {
-            // TODO put that select in the mapper
-            String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
-            TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
-            return new HashSet<EvaluationCriteria>(query.getResultList());
+            return ecMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
             throw new Exception("Erreur lors de la récupération des évaluations, veuillez réessayer plus tard.");
         }
     }
+
     /**
-     * Les trois méthodes ci-dessous servent à créer des notes et des evaluations. ce serait plus simple et propre de
+     * Les méthodes ci-dessous servent à créer des notes et des evaluations. ce serait plus simple et propre de
      * simplement faire confiance à Hibernate et son système de cascade, mais on aime les mappers.
      */
     /**

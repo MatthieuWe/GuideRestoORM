@@ -35,6 +35,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                 .executeUpdate();
         return deletedCount > 0;
     }
+
     public int deleteByRestaurant(EntityManager em, Restaurant resto) {
         String jpqlQuery = "DELETE FROM CompleteEvaluation ce WHERE restaurant.id = :restaurantId";
         int deletedCount = em.createQuery(jpqlQuery)
