@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
 import java.util.Set;
 
 public class RestaurantServices {
@@ -118,8 +119,9 @@ public class RestaurantServices {
     public City createCity(String zipCode, String cityName) throws Exception {
         try {
             // Nous faisons tout de même un check pour voir si la ville existe déjà (peu probable)
-            return cityMapper.findByZipAndName(em, zipCode, cityName);
-        }catch (NoResultException nre){
+            List<City> cityList = cityMapper.findByZipAndName(em, zipCode, cityName);
+            return cityList.get(0);
+        }catch (IndexOutOfBoundsException ioe){
             // Si rien n'est trouvé, on crée la nouvelle ville
             return new City(zipCode, cityName);
         }catch (Exception e){

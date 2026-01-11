@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class CityMapper extends AbstractMapper<City> {
@@ -22,7 +23,7 @@ public class CityMapper extends AbstractMapper<City> {
         cityQuery.setParameter("name", "%" + partialName.toLowerCase() + "%");
         return new HashSet<>(cityQuery.getResultList());
     }
-    public City findByZipAndName(EntityManager em,String zip, String name) {
+    public List<City> findByZipAndName(EntityManager em, String zip, String name) {
         /*
         **La Base de Données ne garantit pas l'unicité zip et du nom pour une ville, on le gère ici.
         * On prends également le premier de la liste pour rester alignés avec le code fournit par M. Baudet.
@@ -31,7 +32,7 @@ public class CityMapper extends AbstractMapper<City> {
         TypedQuery<City> cityQuery = em.createNamedQuery("City.findByExactZipAndName", City.class);
         cityQuery.setParameter("zip", zip);
         cityQuery.setParameter("name", name);
-        return cityQuery.getResultList().getFirst();
+        return cityQuery.getResultList();
     }
 
     @Override
