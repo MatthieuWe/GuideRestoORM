@@ -2,7 +2,6 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.CityMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
@@ -11,9 +10,6 @@ import jakarta.persistence.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -251,7 +247,6 @@ public class RestaurantServices {
         try {
            // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
            // Nous ne gérons pas l'interface car il n'y a pas de méthode dans l'interface pour en ajouter des nouveaux
-           // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
            JpaUtils.inTransaction(em -> {
                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                City city = managedRestaurant.getAddress().getCity();

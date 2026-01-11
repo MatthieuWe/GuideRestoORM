@@ -33,12 +33,4 @@ public class GradeMapper extends AbstractMapper<Grade> {
                 .executeUpdate();
         return deletedCount > 0;
     }
-    public int deleteByEvaluation(EntityManager em, CompleteEvaluation eval) {
-        String jpqlQuery = "DELETE FROM Grade gr WHERE evaluation.id = :evaluationId";
-        int deletedCount = em.createQuery(jpqlQuery)
-                .setParameter("evaluationId", eval.getId())
-                .executeUpdate();
-        return deletedCount;
-    }
-
 }

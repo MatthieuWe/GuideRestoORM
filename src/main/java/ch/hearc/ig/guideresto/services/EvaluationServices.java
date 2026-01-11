@@ -4,8 +4,6 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,15 +22,11 @@ public class EvaluationServices {
     private static EvaluationServices instance;
 
     private BasicEvaluationMapper beMapper ;
-    private CompleteEvaluationMapper ceMapper ;
-    private GradeMapper gMapper ;
     private EvaluationCriteriaMapper ecMapper ;
 
     private EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
-        ceMapper = new CompleteEvaluationMapper();
-        gMapper = new GradeMapper();
         ecMapper = new EvaluationCriteriaMapper();
     }
 

@@ -1,12 +1,10 @@
 package ch.hearc.ig.guideresto.persistence;
 
-import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
 import java.util.*;
-import java.sql.*;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 

@@ -34,14 +34,6 @@ public class CityMapper extends AbstractMapper<City> {
         return cityQuery.getResultList().getFirst();
     }
 
-    public boolean purgeCity(EntityManager em, City city) {
-        int deletedCount = em.createQuery("DELETE FROM City ci WHERE ci = :city" +
-                " AND NOT EXISTS (SELECT r FROM Restaurant r WHERE r.address.city = :city)")
-                .setParameter("city", city)
-                .executeUpdate();
-        return deletedCount > 0;
-    }
-
     @Override
     public boolean delete(EntityManager em, City city) {
         int deletedCount = em.createQuery("DELETE FROM City cy WHERE cy = :city")
