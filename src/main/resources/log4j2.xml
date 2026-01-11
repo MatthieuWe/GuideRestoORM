@@ -20,9 +20,9 @@
             <AppenderRef ref="DEBUG_LOG"/>
         </Logger>-->
         <Root level="DEBUG">
-            <AppenderRef ref="CONSOLE" level="INFO"/>
-            <AppenderRef ref="MAIN" level="WARN"/>
-            <AppenderRef ref="DEBUG_LOG" level="DEBUG"/>
+            <AppenderRef ref="CONSOLE" level="ERROR"/>
+            <AppenderRef ref="MAIN" level="ERROR"/>
+            <AppenderRef ref="DEBUG_LOG" level="ERROR"/>
         </Root>
     </Loggers>
 </Configuration>
