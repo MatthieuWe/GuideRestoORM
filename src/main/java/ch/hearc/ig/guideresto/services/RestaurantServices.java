@@ -10,7 +10,6 @@ import jakarta.persistence.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public class RestaurantServices {
@@ -264,7 +263,6 @@ public class RestaurantServices {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
             throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez réessayer.");
         } catch (Exception e) {
-            e.printStackTrace();
             logger.error("Error while deleting restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de l'effacement du restaurant, veuillez réessayer plus tard.");
         }
