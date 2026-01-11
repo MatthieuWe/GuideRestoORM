@@ -4,8 +4,6 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.TypedQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,16 +21,13 @@ public class EvaluationServices {
 
     private static EvaluationServices instance;
 
-    //mappers
     private BasicEvaluationMapper beMapper ;
-    private CompleteEvaluationMapper ceMapper ;
-    private GradeMapper gMapper ;
+    private EvaluationCriteriaMapper ecMapper ;
 
     private EvaluationServices() {
         em = JpaUtils.getEntityManager();
         beMapper = new BasicEvaluationMapper();
-        ceMapper = new CompleteEvaluationMapper();
-        gMapper = new GradeMapper();
+        ecMapper = new EvaluationCriteriaMapper();
     }
 
     public static EvaluationServices getInstance() {
@@ -60,16 +55,15 @@ public class EvaluationServices {
 
     public Set<EvaluationCriteria> findAllEvaluationCriteria() throws Exception {
         try {
-            String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
-            TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
-            return new HashSet<EvaluationCriteria>(query.getResultList());
+            return ecMapper.findAll(em);
         } catch (Exception e) {
             logger.error("Error while fetching all evaluation criteria: " + e.getMessage());
             throw new Exception("Erreur lors de la récupération des évaluations, veuillez réessayer plus tard.");
         }
     }
+
     /**
-     * Les trois méthodes ci-dessous servent à créer des notes et des evaluations. ce serait plus simple et propre de
+     * Les méthodes ci-dessous servent à créer des notes et des evaluations. ce serait plus simple et propre de
      * simplement faire confiance à Hibernate et son système de cascade, mais on aime les mappers.
      */
     /**
@@ -90,8 +84,9 @@ public class EvaluationServices {
             }
             final String ipAddress = tempIpAddress;
             JpaUtils.inTransaction(em -> {
-                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                 BasicEvaluation eval = new BasicEvaluation(new Date(), managedRestaurant, like, ipAddress);
+                managedRestaurant.getEvaluations().add(eval);
                 em.persist(eval);
             });
         } catch (Exception e) {
@@ -107,8 +102,9 @@ public class EvaluationServices {
     public void addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) throws Exception {
         try {
             JpaUtils.inTransaction(em-> {
-                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                 CompleteEvaluation eval = new CompleteEvaluation(new Date(), managedRestaurant, comment, username);
+                managedRestaurant.getEvaluations().add(eval);
                 em.persist(eval);
                 eval.setGrades(new HashSet<>());
 

@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 
 public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria> {
 
-    // je ne vois actuellement pas de methode findByXXX qui puisse être utile ici -MW
+    /**
+     * Il n'y a pas d'utilité à faire des méthodes findById car aucune évaluation n'est appelée par son ID
+     */
 
     @Override
     public Set<EvaluationCriteria> findAll(EntityManager em) {

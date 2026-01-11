@@ -42,11 +42,5 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
                 .executeUpdate();
         return deletedCount > 0;
     }
-    public int deleteByRestaurant(EntityManager em, Restaurant resto) {
-        String jpqlQuery = "DELETE FROM BasicEvaluation be WHERE restaurant.id = :restaurantId";
-        int deletedCount = em.createQuery(jpqlQuery)
-                .setParameter("restaurantId", resto.getId())
-                .executeUpdate();
-        return deletedCount;
-    }
+
 }

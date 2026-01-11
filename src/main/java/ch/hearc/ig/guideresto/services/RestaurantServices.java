@@ -2,23 +2,14 @@ package ch.hearc.ig.guideresto.services;
 
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.CityMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.RestaurantTypeMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.OptimisticLockException;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 
 public class RestaurantServices {
@@ -27,7 +18,6 @@ public class RestaurantServices {
 
     private static RestaurantServices instance;
 
-    //mappers
     private RestaurantMapper restaurantMapper ;
     private CityMapper cityMapper ;
     private RestaurantTypeMapper typeMapper ;
@@ -81,6 +71,7 @@ public class RestaurantServices {
             throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
         }
     }
+
     /*
     Cette méthode recherche toutes les villes contenant la chaine fournie (nom de ville n'est pas unique en DB
     et le programme accepte une partie du nom) puis retourne tous les restos de chaque ville correspondante à la recherche
@@ -92,21 +83,24 @@ public class RestaurantServices {
     public Set<Restaurant> searchByCity(String search) throws Exception {
         try {
             // Solution A
+            /*
             Set<City> cities = cityMapper.findByName(em, search);
             Set<Restaurant> restos = new HashSet<>();
             for (City city : cities) {
                 restos.addAll(restaurantMapper.findByCity(em, city));
             }
             return restos;
-            // Solution B - meilleur
-            /*
-            return restaurantMapper.findByCityName(em, search);
             */
+            // Solution B - meilleur
+
+            return restaurantMapper.findByCityName(em, search);
+
         } catch (Exception e) {
             logger.error("Error while searching restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
         }
     }
+
     public Set<Restaurant> searchByType(RestaurantType type) throws Exception{
         try{
             return restaurantMapper.findByType(em, type);
@@ -123,10 +117,10 @@ public class RestaurantServices {
      */
     public City createCity(String zipCode, String cityName) throws Exception {
         try {
-            // check si la ville existe deja et la retourne à la place - peu probable
+            // Nous faisons tout de même un check pour voir si la ville existe déjà (peu probable)
             return cityMapper.findByZipAndName(em, zipCode, cityName);
         }catch (NoResultException nre){
-            // si on n'a rien trouvé
+            // Si rien n'est trouvé, on crée la nouvelle ville
             return new City(zipCode, cityName);
         }catch (Exception e){
             logger.error("Error while creating city: " + e.getMessage());
@@ -134,26 +128,46 @@ public class RestaurantServices {
         }
     }
 
-
     public Restaurant createRestaurant(String name, String description, String website, String street, City city, RestaurantType restaurantType) throws Exception {
         Restaurant restaurant = new Restaurant();
         try {
+            JpaUtils.inTransaction(em -> {
             restaurant.setName(name);
             restaurant.setDescription(description);
             restaurant.setWebsite(website);
-            restaurant.setAddress(new Localisation(street, city));
-            restaurant.setType(restaurantType);
 
-            city.getRestaurants().add(restaurant);
-            restaurantType.getRestaurants().add(restaurant);
+            // on gère la bidirectionalité du type en vérifiant qu'il existe
+            RestaurantType managedType = em.find(RestaurantType.class, restaurantType.getId());
+            if (managedType != null) {
+                restaurant.setType(managedType);
+                managedType.getRestaurants().add(restaurant);
+            } else {
+                throw new EntityNotFoundException("Erreur lors de la creation du restaurant: le type sélectionné n'existe pas en base de données.");
+            }
 
-            JpaUtils.inTransaction(em -> {
-                if (!em.contains(city)) { // la ville n'est pas encore persistée, créée par l'utilisateur pour ce nouveau resto
-                    em.persist(city);
-                }
-                em.persist(restaurant);
+            // on gère la persistance de la ville si nouvelle ou non
+            City managedCity;
+            if (city.getId() == null) {
+                // c'est une nouvelle ville créée par l'utilisateur pour ce nouveau resto
+                em.persist(city);
+                managedCity = city;
+            } else {
+                // Si d'un coup elle était detached. oui, "si d'un coup" ça se dit chez nous.
+                // Note: merge ne modifie pas l'objet passé en param, donc on a besoin de cette variable managedCity
+                managedCity = em.merge(city);
+            }
+            // on gère la bidirectionalité de la ville
+            restaurant.setAddress(new Localisation(street, managedCity));
+            managedCity.getRestaurants().add(restaurant);
+
+            // enfin on persiste le resto
+            // On ne gère pas les évaluations pour un nouveau restaurant, il est normal qu'il n'en ait pas encore
+            em.persist(restaurant);
             });
             return restaurant;
+        } catch (EntityNotFoundException enf) {
+            logger.error("Error creating restaurant: " + enf.getMessage());
+            throw enf;
         } catch (Exception e) {
             logger.error("Error creating restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la creation du restaurant, veuillez réessayer plus tard.");
@@ -163,8 +177,30 @@ public class RestaurantServices {
     public void updateRestaurant(Restaurant restaurant, String newAddress, City newCity) throws Exception{
         try{
             JpaUtils.inTransaction(em -> {
-                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
-                managedRestaurant.setAddress(new Localisation(newAddress, newCity));
+                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
+
+                City oldCity = managedRestaurant.getAddress().getCity();
+                City managedCity;
+                // 3 possibilités
+                if (oldCity.getId().equals(newCity.getId())) { // 1) c'est la meme ville
+                    managedCity = oldCity;
+                } else { // C'en est une autre, on enlève le resto le l'ancienne ville
+                    oldCity.getRestaurants().remove(managedRestaurant);
+                    if (oldCity.getRestaurants().isEmpty()) {
+                        em.remove(oldCity);
+                    }
+                    if (newCity.getId() == null) { // 2) c'est une nouvelle ville, on la persiste
+                        em.persist(newCity);
+                        managedCity = newCity;
+                    } else { // 3) c'est une ville existante, on s'assure qu'elle est managed
+                        managedCity = em.merge(newCity);
+                    }
+                    // on gère la bidirectionalité de la nouvelle ville
+                    managedCity.getRestaurants().add(managedRestaurant);
+                }
+
+                // Localisation est un embedded > doit ête immutable > on fait un new dans tous les cas
+                managedRestaurant.setAddress(new Localisation(newAddress, managedCity));
             });
         } catch (OptimisticLockException e) {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
@@ -178,15 +214,24 @@ public class RestaurantServices {
     public void updateRestaurant(Restaurant restaurant, String newName, String newDescription, String newWebsite, RestaurantType newType) throws Exception {
         try {
             JpaUtils.inTransaction(em -> {
-                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                 managedRestaurant.setName(newName);
                 managedRestaurant.setDescription(newDescription);
                 managedRestaurant.setWebsite(newWebsite);
-                managedRestaurant.setType(newType);
+
+                // on gère la bidirectionalité du type en vérifiant qu'il existe
+                RestaurantType oldType = managedRestaurant.getType();
+                RestaurantType managedType = em.find(RestaurantType.class, newType.getId());
+                if (managedType == null) {
+                    throw new EntityNotFoundException("Erreur lors de la creation du restaurant: le type sélectionné n'existe pas en base de données.");
+                }else if(!oldType.getId().equals(managedType.getId())) { // c'est un nouveau type, sinon on ne change rien (pas de else)
+                    oldType.getRestaurants().remove(managedRestaurant);
+                    managedRestaurant.setType(managedType);
+                    managedType.getRestaurants().add(restaurant);
+                }
             });
         } catch (OptimisticLockException e) {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
-            //tx.rollback();
             throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
         }catch (Exception e) {
             logger.error("Error while updating restaurant: " + e.getMessage());
@@ -202,11 +247,9 @@ public class RestaurantServices {
     public boolean deleteRestaurant(Restaurant restaurant) throws Exception {
         try {
            // on garde une ref sur la ville pour vérifier si un autre resto s'y trouve après effacement
-           // le type osef on le laisse car il n'y a pas de méthode pour en ajouter dans l'interface
-           // TODO supprimer toutes les méthodes qui ne sont plus appelées depuis ici - cleanup à la fin
-           // TODO il y a encore un bug, si on essaie d'effacer un resto créé dans la meme session ça plante.
+           // Nous ne gérons pas l'interface car il n'y a pas de méthode dans l'interface pour en ajouter des nouveaux
            JpaUtils.inTransaction(em -> {
-               Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+               Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                City city = managedRestaurant.getAddress().getCity();
                city.getRestaurants().remove(managedRestaurant);
                managedRestaurant.getType().getRestaurants().remove(managedRestaurant);
@@ -218,10 +261,8 @@ public class RestaurantServices {
            return true;
         } catch (OptimisticLockException e) {
             logger.error("Optimistic lock error while updating restaurant: " + e.getMessage());
-            //tx.rollback();
-            throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez recharger les données et réessayer.");
+            throw new Exception("Le restaurant a été modifié par un autre utilisateur. Veuillez réessayer.");
         } catch (Exception e) {
-            e.printStackTrace();
             logger.error("Error while deleting restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de l'effacement du restaurant, veuillez réessayer plus tard.");
         }

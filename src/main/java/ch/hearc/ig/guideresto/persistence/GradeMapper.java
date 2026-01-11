@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GradeMapper extends AbstractMapper<Grade> {
-    // on pourrait faire la meme avec les criteres d'évaluation mais c'est un peu inutile
     public Set<Grade> findByEvaluation(EntityManager em, CompleteEvaluation ce) {
         TypedQuery<Grade> query = em.createNamedQuery("Grade.findByEvaluation", Grade.class);
         query.setParameter("evaluation", ce);
@@ -34,12 +33,4 @@ public class GradeMapper extends AbstractMapper<Grade> {
                 .executeUpdate();
         return deletedCount > 0;
     }
-    public int deleteByEvaluation(EntityManager em, CompleteEvaluation eval) {
-        String jpqlQuery = "DELETE FROM Grade gr WHERE evaluation.id = :evaluationId";
-        int deletedCount = em.createQuery(jpqlQuery)
-                .setParameter("evaluationId", eval.getId())
-                .executeUpdate();
-        return deletedCount;
-    }
-
 }
