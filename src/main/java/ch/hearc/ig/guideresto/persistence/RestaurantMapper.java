@@ -18,12 +18,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         return new HashSet<>(query.getResultList());
     }
 
-    public Set<Restaurant> findByCityName(EntityManager em, String partialCityName) {
-        TypedQuery<Restaurant> query = em.createNamedQuery("Restaurant.findByCityName", Restaurant.class);
-        query.setParameter("name", partialCityName);
-        return new HashSet<>(query.getResultList());
-    }
-
     public Set<Restaurant> findByType(EntityManager em, RestaurantType type) {
         TypedQuery<Restaurant> query = em.createNamedQuery("Restaurant.findByType", Restaurant.class);
         query.setParameter("type", type);
@@ -33,6 +27,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     public Set<Restaurant> findByName(EntityManager em, String searchedName) {
         TypedQuery<Restaurant> query = em.createNamedQuery("Restaurant.findByName", Restaurant.class);
         query.setParameter("name", searchedName);
+        return new HashSet<>(query.getResultList());
+    }
+    public Set<Restaurant> findByCityName(EntityManager em, String partialCityName) {
+        TypedQuery<Restaurant> query = em.createNamedQuery("Restaurant.findByCityName", Restaurant.class);
+        query.setParameter("name", partialCityName);
         return new HashSet<>(query.getResultList());
     }
 

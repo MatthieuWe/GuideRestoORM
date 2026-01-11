@@ -84,16 +84,18 @@ public class RestaurantServices {
     public Set<Restaurant> searchByCity(String search) throws Exception {
         try {
             // Solution A
+            /*
             Set<City> cities = cityMapper.findByName(em, search);
             Set<Restaurant> restos = new HashSet<>();
             for (City city : cities) {
                 restos.addAll(restaurantMapper.findByCity(em, city));
             }
             return restos;
-            // Solution B - meilleur
-            /*
-            return restaurantMapper.findByCityName(em, search);
             */
+            // Solution B - meilleur
+
+            return restaurantMapper.findByCityName(em, search);
+
         } catch (Exception e) {
             logger.error("Error while searching restaurant: " + e.getMessage());
             throw new Exception("Erreur lors de la recherche de restaurant, veuillez réessayer plus tard.");
