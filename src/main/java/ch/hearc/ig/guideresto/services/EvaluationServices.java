@@ -60,6 +60,7 @@ public class EvaluationServices {
 
     public Set<EvaluationCriteria> findAllEvaluationCriteria() throws Exception {
         try {
+            // TODO put that select in the mapper
             String findAllEvalCriteria = "SELECT ec FROM EvaluationCriteria ec";
             TypedQuery<EvaluationCriteria> query = em.createQuery(findAllEvalCriteria, EvaluationCriteria.class);
             return new HashSet<EvaluationCriteria>(query.getResultList());
@@ -90,8 +91,9 @@ public class EvaluationServices {
             }
             final String ipAddress = tempIpAddress;
             JpaUtils.inTransaction(em -> {
-                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                 BasicEvaluation eval = new BasicEvaluation(new Date(), managedRestaurant, like, ipAddress);
+                managedRestaurant.getEvaluations().add(eval);
                 em.persist(eval);
             });
         } catch (Exception e) {
@@ -107,8 +109,9 @@ public class EvaluationServices {
     public void addCompleteEvaluation(Restaurant restaurant, String comment, String username, Map<EvaluationCriteria, Integer> grades) throws Exception {
         try {
             JpaUtils.inTransaction(em-> {
-                Restaurant managedRestaurant = (Restaurant) em.getReference(Restaurant.class, restaurant.getId());
+                Restaurant managedRestaurant = (Restaurant) em.find(Restaurant.class, restaurant.getId());
                 CompleteEvaluation eval = new CompleteEvaluation(new Date(), managedRestaurant, comment, username);
+                managedRestaurant.getEvaluations().add(eval);
                 em.persist(eval);
                 eval.setGrades(new HashSet<>());
 
